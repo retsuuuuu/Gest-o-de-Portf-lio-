@@ -7,8 +7,6 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  LineChart,
-  Line,
   AreaChart,
   Area,
   PieChart,
@@ -17,14 +15,13 @@ import {
 } from 'recharts';
 import { 
   TrendingUp, 
-  Users, 
   Clock, 
   CheckCircle2, 
   AlertCircle,
   ArrowUpRight,
   ArrowDownRight
 } from 'lucide-react';
-import { PROJECTS } from '../constants';
+import { Project } from '../types';
 
 const AnalyticsCard = ({ title, value, change, isPositive, icon: Icon }: any) => (
   <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
@@ -42,12 +39,12 @@ const AnalyticsCard = ({ title, value, change, isPositive, icon: Icon }: any) =>
   </div>
 );
 
-export const AnalyticsModule = () => {
+export const AnalyticsModule = ({ projectsData }: { projectsData: Project[] }) => {
   const stats = {
-    total: PROJECTS.length,
-    atrasados: PROJECTS.filter(p => p.farol.toLowerCase().includes('atrasado')).length,
-    emAndamento: PROJECTS.filter(p => p.status === 'Em andamento').length,
-    concluidos: PROJECTS.filter(p => p.status === 'Concluído').length,
+    total: projectsData.length,
+    atrasados: projectsData.filter(p => p.farol.toLowerCase().includes('atrasado')).length,
+    emAndamento: projectsData.filter(p => p.status === 'Em andamento').length,
+    concluidos: projectsData.filter(p => p.status === 'Concluído').length,
   };
 
   const monthlyData = [
@@ -55,15 +52,17 @@ export const AnalyticsModule = () => {
     { name: 'Fev', projetos: 7, concluídos: 3 },
     { name: 'Mar', projetos: 9, concluídos: 5 },
     { name: 'Abr', projetos: 12, concluídos: 8 },
-    { name: 'Mai', projetos: 15, concluídos: 10 },
+    { name: 'Mai', projetos: projectsData.length, concluídos: stats.concluidos },
   ];
 
   const phaseData = [
-    { name: 'Backlog', value: PROJECTS.filter(p => p.phase === 'Backlog').length },
-    { name: 'Briefing', value: PROJECTS.filter(p => p.phase === 'Briefing').length },
-    { name: 'Desenvolvimento', value: PROJECTS.filter(p => p.phase === 'Desenvolvimento').length },
-    { name: 'Escopo', value: PROJECTS.filter(p => p.phase === 'Escopo').length },
-    { name: 'Homologação', value: PROJECTS.filter(p => p.phase === 'Homologação Cliente').length },
+    { name: 'Backlog', value: projectsData.filter(p => p.phase === 'Backlog').length },
+    { name: 'Briefing', value: projectsData.filter(p => p.phase === 'Briefing').length },
+    { name: 'Desenvolvimento', value: projectsData.filter(p => p.phase === 'Desenvolvimento').length },
+    { name: 'Escopo', value: projectsData.filter(p => p.phase === 'Escopo').length },
+    { name: 'Homologação', value: projectsData.filter(p => p.phase === 'Homologação Cliente').length },
+    { name: 'Protótipo', value: projectsData.filter(p => p.phase === 'Protótipo').length },
+    { name: 'Valoração', value: projectsData.filter(p => p.phase === 'Valoração').length },
   ].filter(d => d.value > 0);
 
   const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b'];
@@ -75,16 +74,14 @@ export const AnalyticsModule = () => {
         <p className="text-slate-500">Visão detalhada e métricas do portfólio de projetos</p>
       </div>
 
-      {/* Top Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <AnalyticsCard title="Total de Projetos" value={stats.total} change="12%" isPositive={true} icon={TrendingUp} />
         <AnalyticsCard title="Em Andamento" value={stats.emAndamento} change="5%" isPositive={true} icon={Clock} />
-        <AnalyticsCard title="Taxa de Conclusão" value={`${Math.round((stats.concluidos / stats.total) * 100)}%`} change="8%" isPositive={true} icon={CheckCircle2} />
+        <AnalyticsCard title="Taxa de Conclusão" value={`${stats.total ? Math.round((stats.concluidos / stats.total) * 100) : 0}%`} change="8%" isPositive={true} icon={CheckCircle2} />
         <AnalyticsCard title="Projetos Críticos" value={stats.atrasados} change="2%" isPositive={false} icon={AlertCircle} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Growth Chart */}
         <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
           <h3 className="text-lg font-bold text-slate-900 mb-6">Crescimento do Portfólio</h3>
           <div className="h-80 w-full">
@@ -108,7 +105,6 @@ export const AnalyticsModule = () => {
           </div>
         </div>
 
-        {/* Phase Distribution */}
         <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
           <h3 className="text-lg font-bold text-slate-900 mb-6">Distribuição por Fase</h3>
           <div className="h-80 w-full">
