@@ -3,7 +3,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { 
   LayoutDashboard, BarChart3, Search, Bell, Settings, Plus,
   AlertCircle, CheckCircle2, Clock, Filter, PauseCircle, ShieldAlert,
-  Eye, Pencil, X, Save, Calendar
+  Eye, Pencil, X, Save, Calendar, Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Project } from './types';
@@ -21,14 +21,16 @@ const SidebarItem = ({ icon: Icon, label, active = false, onClick }: { icon: any
 );
 
 const StatCard = ({ label, value, icon: Icon, color }: { label: string, value: string | number, icon: any, color: string }) => (
-  <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+  <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
     <div className="flex justify-between items-start mb-4">
       <div className={`p-2 rounded-lg ${color}`}>
         <Icon size={20} className="text-white" />
       </div>
     </div>
-    <h3 className="text-slate-500 text-sm font-medium mb-1">{label}</h3>
-    <p className="text-2xl font-bold text-slate-900">{value}</p>
+    <div className="flex-1 flex flex-col justify-between">
+      <h3 className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-2 min-h-[32px] flex items-center">{label}</h3>
+      <p className="text-2xl font-bold text-slate-900">{value}</p>
+    </div>
   </div>
 );
 
@@ -176,6 +178,33 @@ export default function App() {
     }
   };
 
+  const handleDeleteProject = async (project: Project) => {
+    if (!window.confirm(`Tem a certeza que deseja eliminar o projeto "${project.name}"?`)) return;
+
+    setIsSaving(true);
+    const payload = {
+      action: "delete",
+      payload: {
+        "CODIGO PROJETO": project.code
+      }
+    };
+
+    try {
+      await fetch(API_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+
+      setProjectsData(prev => prev.filter(p => p.id !== project.id));
+    } catch (error) {
+      console.error("Erro ao eliminar projeto:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -296,6 +325,9 @@ export default function App() {
                               </button>
                               <button onClick={() => { setEditingProject(project); setIsEditOpen(true); }} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
                                 <Pencil size={16} />
+                              </button>
+                              <button onClick={() => handleDeleteProject(project)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg">
+                                <Trash2 size={16} />
                               </button>
                             </div>
                           </td>
