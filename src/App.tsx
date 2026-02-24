@@ -32,6 +32,15 @@ const StatCard = ({ label, value, icon: Icon, color }: { label: string, value: s
   </div>
 );
 
+const FormField = ({ label, children }: { label: string, children: React.ReactNode }) => (
+  <div className="flex flex-col gap-1.5">
+    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{label}</label>
+    {children}
+  </div>
+);
+
+const inputClass = "w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all placeholder:text-slate-400";
+
 const StatusBadge = ({ status }: { status: string }) => {
   const getStyles = () => {
     switch (status?.toLowerCase()) {
@@ -143,7 +152,7 @@ export default function App() {
 
       // Atualização Otimista da Interface
       if (isEdit) {
-        setProjectsData(prev => prev.map(p => p.code === code ? { ...p, ...projectToSave } as Project : p));
+        setProjectsData(prev => prev.map(p => p.id === projectToSave.id ? { ...p, ...projectToSave } as Project : p));
         setIsEditOpen(false);
       } else {
         const newProj: Project = { ...projectToSave, code, id: Date.now().toString() } as Project;
@@ -297,25 +306,79 @@ export default function App() {
       {/* Modais de Interação */}
       <AnimatePresence>
         {isCreateOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-6">
-              <h2 className="text-xl font-bold mb-4">Novo Projeto</h2>
-              <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(newProject, false); }} className="space-y-4">
-                <input required placeholder="Nome do Projeto" value={newProject.name} onChange={(e) => setNewProject({...newProject, name: e.target.value})} className="w-full px-4 py-2 border rounded-lg outline-none" />
-                <input required placeholder="Iniciativa" value={newProject.initiative} onChange={(e) => setNewProject({...newProject, initiative: e.target.value})} className="w-full px-4 py-2 border rounded-lg outline-none" />
-                
-                <div className="flex gap-4">
-                  <select value={newProject.phase} onChange={(e) => setNewProject({...newProject, phase: e.target.value})} className="w-full px-4 py-2 border rounded-lg">
-                    {['Backlog', 'Briefing', 'Desenvolvimento', 'Escopo', 'Homologação Cliente', 'Concluído', 'Protótipo', 'Valoração'].map(f => <option key={f} value={f}>{f}</option>)}
-                  </select>
-                  <select value={newProject.status} onChange={(e) => setNewProject({...newProject, status: e.target.value})} className="w-full px-4 py-2 border rounded-lg">
-                    {['Backlog', 'Concluído', 'Em andamento', 'Pausado', 'Impedimento'].map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-6 my-8">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold">Novo Projeto</h2>
+                <button onClick={() => setIsCreateOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+              <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(newProject, false); }} className="space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="md:col-span-2">
+                    <FormField label="Nome do Projeto">
+                      <input required placeholder="Nome do Projeto" value={newProject.name} onChange={(e) => setNewProject({...newProject, name: e.target.value})} className={inputClass} />
+                    </FormField>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <FormField label="Iniciativa / Cliente">
+                      <input required placeholder="Iniciativa" value={newProject.initiative} onChange={(e) => setNewProject({...newProject, initiative: e.target.value})} className={inputClass} />
+                    </FormField>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <FormField label="Código do Projeto">
+                      <input placeholder="Ex: C00001" value={newProject.code} onChange={(e) => setNewProject({...newProject, code: e.target.value})} className={inputClass} />
+                    </FormField>
+                  </div>
+
+                  <FormField label="Fase">
+                    <select value={newProject.phase} onChange={(e) => setNewProject({...newProject, phase: e.target.value})} className={inputClass}>
+                      {['Backlog', 'Briefing', 'Desenvolvimento', 'Escopo', 'Homologação Cliente', 'Concluído', 'Protótipo', 'Valoração'].map(f => <option key={f} value={f}>{f}</option>)}
+                    </select>
+                  </FormField>
+
+                  <FormField label="Status">
+                    <select value={newProject.status} onChange={(e) => setNewProject({...newProject, status: e.target.value})} className={inputClass}>
+                      {['Backlog', 'Concluído', 'Em andamento', 'Pausado', 'Impedimento'].map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </FormField>
+
+                  <FormField label="Farol">
+                    <select value={newProject.farol} onChange={(e) => setNewProject({...newProject, farol: e.target.value})} className={inputClass}>
+                      {['No prazo', 'Atrasado (Cliente)', 'Atrasado (TradeUp)', 'Concluído'].map(f => <option key={f} value={f}>{f}</option>)}
+                    </select>
+                  </FormField>
+
+                  <FormField label="Data Base (Baseline)">
+                    <select value={newProject.baseline} onChange={(e) => setNewProject({...newProject, baseline: e.target.value})} className={inputClass}>
+                      <option value="A definir">A definir</option>
+                      <option value="26/01/2026">26/01/2026</option>
+                    </select>
+                  </FormField>
+
+                  <FormField label="Data de Entrega">
+                    <input placeholder="DD/MM/AAAA" value={newProject.deliveryDate} onChange={(e) => setNewProject({...newProject, deliveryDate: e.target.value})} className={inputClass} />
+                  </FormField>
+
+                  <FormField label="Data Replanejada">
+                    <input placeholder="DD/MM/AAAA" value={newProject.replannedDate} onChange={(e) => setNewProject({...newProject, replannedDate: e.target.value})} className={inputClass} />
+                  </FormField>
+
+                  <div className="md:col-span-2">
+                    <FormField label="Report">
+                      <textarea rows={3} placeholder="Breve resumo do status..." value={newProject.report} onChange={(e) => setNewProject({...newProject, report: e.target.value})} className={`${inputClass} resize-none`} />
+                    </FormField>
+                  </div>
                 </div>
-                
-                <div className="flex justify-end gap-3 mt-6">
-                  <button type="button" onClick={() => setIsCreateOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg font-bold">Cancelar</button>
-                  <button type="submit" disabled={isSaving} className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold disabled:opacity-50">{isSaving ? 'A gravar...' : 'Criar Projeto'}</button>
+
+                <div className="flex justify-end gap-3 pt-4">
+                  <button type="button" onClick={() => setIsCreateOpen(false)} className="px-6 py-2.5 text-slate-600 hover:bg-slate-50 rounded-xl font-bold transition-colors">Cancelar</button>
+                  <button type="submit" disabled={isSaving} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold flex items-center gap-2 disabled:opacity-50 hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100">
+                    <Plus size={18} /> {isSaving ? 'A gravar...' : 'Criar Projeto'}
+                  </button>
                 </div>
               </form>
             </motion.div>
@@ -323,29 +386,78 @@ export default function App() {
         )}
 
         {isEditOpen && editingProject && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-6">
-              <h2 className="text-xl font-bold mb-4">Editar {editingProject.name}</h2>
-              <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(editingProject, true); }} className="space-y-4">
-                <input required value={editingProject.name} onChange={(e) => setEditingProject({...editingProject, name: e.target.value})} className="w-full px-4 py-2 border rounded-lg outline-none" />
-                <input required value={editingProject.initiative} onChange={(e) => setEditingProject({...editingProject, initiative: e.target.value})} className="w-full px-4 py-2 border rounded-lg outline-none" />
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <select value={editingProject.phase} onChange={(e) => setEditingProject({...editingProject, phase: e.target.value})} className="w-full px-4 py-2 border rounded-lg">
-                    {['Backlog', 'Briefing', 'Desenvolvimento', 'Escopo', 'Homologação Cliente', 'Concluído', 'Protótipo', 'Valoração'].map(f => <option key={f} value={f}>{f}</option>)}
-                  </select>
-                  <select value={editingProject.status} onChange={(e) => setEditingProject({...editingProject, status: e.target.value})} className="w-full px-4 py-2 border rounded-lg">
-                    {['Backlog', 'Concluído', 'Em andamento', 'Pausado', 'Impedimento'].map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-                <select value={editingProject.farol} onChange={(e) => setEditingProject({...editingProject, farol: e.target.value})} className="w-full px-4 py-2 border rounded-lg">
-                    {['No prazo', 'Atrasado (Cliente)', 'Atrasado (TradeUp)', 'Concluído'].map(f => <option key={f} value={f}>{f}</option>)}
-                </select>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-6 my-8">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold">Editar Projeto</h2>
+                <button onClick={() => setIsEditOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+              <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(editingProject, true); }} className="space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="md:col-span-2">
+                    <FormField label="Nome do Projeto">
+                      <input required value={editingProject.name} onChange={(e) => setEditingProject({...editingProject, name: e.target.value})} className={inputClass} />
+                    </FormField>
+                  </div>
 
-                <div className="flex justify-end gap-3 mt-6">
-                  <button type="button" onClick={() => setIsEditOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg font-bold">Cancelar</button>
-                  <button type="submit" disabled={isSaving} className="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold flex items-center gap-2 disabled:opacity-50">
-                    <Save size={16} /> {isSaving ? 'A gravar...' : 'Gravar Alterações'}
+                  <div className="md:col-span-2">
+                    <FormField label="Iniciativa / Cliente">
+                      <input required value={editingProject.initiative} onChange={(e) => setEditingProject({...editingProject, initiative: e.target.value})} className={inputClass} />
+                    </FormField>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <FormField label="Código do Projeto">
+                      <input required value={editingProject.code} onChange={(e) => setEditingProject({...editingProject, code: e.target.value})} className={inputClass} />
+                    </FormField>
+                  </div>
+
+                  <FormField label="Fase">
+                    <select value={editingProject.phase} onChange={(e) => setEditingProject({...editingProject, phase: e.target.value})} className={inputClass}>
+                      {['Backlog', 'Briefing', 'Desenvolvimento', 'Escopo', 'Homologação Cliente', 'Concluído', 'Protótipo', 'Valoração'].map(f => <option key={f} value={f}>{f}</option>)}
+                    </select>
+                  </FormField>
+
+                  <FormField label="Status">
+                    <select value={editingProject.status} onChange={(e) => setEditingProject({...editingProject, status: e.target.value})} className={inputClass}>
+                      {['Backlog', 'Concluído', 'Em andamento', 'Pausado', 'Impedimento'].map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </FormField>
+
+                  <FormField label="Farol">
+                    <select value={editingProject.farol} onChange={(e) => setEditingProject({...editingProject, farol: e.target.value})} className={inputClass}>
+                      {['No prazo', 'Atrasado (Cliente)', 'Atrasado (TradeUp)', 'Concluído'].map(f => <option key={f} value={f}>{f}</option>)}
+                    </select>
+                  </FormField>
+
+                  <FormField label="Data Base (Baseline)">
+                    <select value={editingProject.baseline} onChange={(e) => setEditingProject({...editingProject, baseline: e.target.value})} className={inputClass}>
+                      <option value="A definir">A definir</option>
+                      <option value="26/01/2026">26/01/2026</option>
+                    </select>
+                  </FormField>
+
+                  <FormField label="Data de Entrega">
+                    <input placeholder="DD/MM/AAAA" value={editingProject.deliveryDate} onChange={(e) => setEditingProject({...editingProject, deliveryDate: e.target.value})} className={inputClass} />
+                  </FormField>
+
+                  <FormField label="Data Replanejada">
+                    <input placeholder="DD/MM/AAAA" value={editingProject.replannedDate} onChange={(e) => setEditingProject({...editingProject, replannedDate: e.target.value})} className={inputClass} />
+                  </FormField>
+
+                  <div className="md:col-span-2">
+                    <FormField label="Report">
+                      <textarea rows={3} value={editingProject.report} onChange={(e) => setEditingProject({...editingProject, report: e.target.value})} className={`${inputClass} resize-none`} />
+                    </FormField>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4">
+                  <button type="button" onClick={() => setIsEditOpen(false)} className="px-6 py-2.5 text-slate-600 hover:bg-slate-50 rounded-xl font-bold transition-colors">Cancelar</button>
+                  <button type="submit" disabled={isSaving} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold flex items-center gap-2 disabled:opacity-50 hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100">
+                    <Save size={18} /> {isSaving ? 'A gravar...' : 'Gravar Alterações'}
                   </button>
                 </div>
               </form>
