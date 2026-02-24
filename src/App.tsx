@@ -185,11 +185,11 @@ export default function App() {
   );
 
   const stats = {
-    atrasados: projectsData.filter(p => p.farol.toLowerCase().includes('atrasado')).length,
-    emAndamento: projectsData.filter(p => p.status === 'Em andamento').length,
-    pausados: projectsData.filter(p => p.status === 'Pausado').length,
-    impedimento: projectsData.filter(p => p.status === 'Impedimento').length,
-    concluidos: projectsData.filter(p => p.status === 'Concluído').length,
+    atrasados: projectsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')).length,
+    emAndamento: projectsData.filter(p => (p.status || '').toLowerCase() === 'em andamento').length,
+    pausados: projectsData.filter(p => (p.status || '').toLowerCase() === 'pausado').length,
+    impedimento: projectsData.filter(p => (p.status || '').toLowerCase() === 'impedimento').length,
+    concluidos: projectsData.filter(p => (p.status || '').toLowerCase() === 'concluído').length,
   };
 
   return (
@@ -353,10 +353,7 @@ export default function App() {
                   </FormField>
 
                   <FormField label="Data Base (Baseline)">
-                    <select value={newProject.baseline} onChange={(e) => setNewProject({...newProject, baseline: e.target.value})} className={inputClass}>
-                      <option value="A definir">A definir</option>
-                      <option value="26/01/2026">26/01/2026</option>
-                    </select>
+                    <input placeholder="DD/MM/AAAA" value={newProject.baseline} onChange={(e) => setNewProject({...newProject, baseline: e.target.value})} className={inputClass} />
                   </FormField>
 
                   <FormField label="Data de Entrega">
@@ -433,10 +430,7 @@ export default function App() {
                   </FormField>
 
                   <FormField label="Data Base (Baseline)">
-                    <select value={editingProject.baseline} onChange={(e) => setEditingProject({...editingProject, baseline: e.target.value})} className={inputClass}>
-                      <option value="A definir">A definir</option>
-                      <option value="26/01/2026">26/01/2026</option>
-                    </select>
+                    <input placeholder="DD/MM/AAAA" value={editingProject.baseline} onChange={(e) => setEditingProject({...editingProject, baseline: e.target.value})} className={inputClass} />
                   </FormField>
 
                   <FormField label="Data de Entrega">
