@@ -133,13 +133,15 @@ export default function App() {
     };
 
     try {
+      // O mode: 'no-cors' é a intervenção cirúrgica para contornar o bloqueio do Google.
       await fetch(API_URL, {
         method: 'POST',
+        mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload)
       });
 
-      // Optimistic UI Update
+      // Atualização Otimista da Interface
       if (isEdit) {
         setProjectsData(prev => prev.map(p => p.code === code ? { ...p, ...projectToSave } as Project : p));
         setIsEditOpen(false);
@@ -150,8 +152,7 @@ export default function App() {
         setNewProject({ name: '', initiative: '', phase: 'Backlog', status: 'Backlog', farol: 'No prazo', baseline: '', report: '', type: 'Estratégico' });
       }
     } catch (error) {
-      console.error("Erro ao salvar", error);
-      alert("Erro ao salvar o projeto.");
+      console.error("Erro crítico de submissão:", error);
     } finally {
       setIsSaving(false);
     }
@@ -162,7 +163,7 @@ export default function App() {
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
           <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-500 font-bold tracking-widest text-sm uppercase">Sincronizando Base de Dados...</p>
+          <p className="text-slate-500 font-bold tracking-widest text-sm uppercase">A sincronizar Base de Dados...</p>
         </div>
       </div>
     );
@@ -184,7 +185,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
-      {/* Sidebar */}
+      {/* Barra Lateral */}
       <aside className="w-64 bg-white border-r border-slate-200 flex flex-col hidden lg:flex">
         <div className="p-6 flex items-center gap-3">
           <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
@@ -213,7 +214,7 @@ export default function App() {
           <div className="flex items-center flex-1 max-w-md">
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input type="text" placeholder="Buscar projetos..." className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              <input type="text" placeholder="Procurar projetos..." className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -241,7 +242,7 @@ export default function App() {
                 <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                   <div>
                     <h2 className="text-lg font-bold text-slate-900">Gestão de Projetos</h2>
-                    <p className="text-sm text-slate-500">Acompanhe e gerencie suas iniciativas</p>
+                    <p className="text-sm text-slate-500">Acompanhe e gira as suas iniciativas</p>
                   </div>
                   <div className="flex gap-3">
                     <button onClick={() => setIsCreateOpen(true)} className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors">
@@ -293,7 +294,7 @@ export default function App() {
         </div>
       </main>
 
-      {/* Modals - Simplified code structures below */}
+      {/* Modais de Interação */}
       <AnimatePresence>
         {isCreateOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
@@ -314,7 +315,7 @@ export default function App() {
                 
                 <div className="flex justify-end gap-3 mt-6">
                   <button type="button" onClick={() => setIsCreateOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg font-bold">Cancelar</button>
-                  <button type="submit" disabled={isSaving} className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold disabled:opacity-50">{isSaving ? 'Salvando...' : 'Criar Projeto'}</button>
+                  <button type="submit" disabled={isSaving} className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold disabled:opacity-50">{isSaving ? 'A gravar...' : 'Criar Projeto'}</button>
                 </div>
               </form>
             </motion.div>
@@ -344,7 +345,7 @@ export default function App() {
                 <div className="flex justify-end gap-3 mt-6">
                   <button type="button" onClick={() => setIsEditOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg font-bold">Cancelar</button>
                   <button type="submit" disabled={isSaving} className="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold flex items-center gap-2 disabled:opacity-50">
-                    <Save size={16} /> {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+                    <Save size={16} /> {isSaving ? 'A gravar...' : 'Gravar Alterações'}
                   </button>
                 </div>
               </form>
@@ -374,7 +375,7 @@ export default function App() {
                 </div>
                 <div className="p-4 bg-slate-50 rounded-xl">
                   <span className="text-sm font-bold text-slate-500 block mb-2">Último Report</span>
-                  <p className="text-sm text-slate-700">{selectedProject.report || 'Sem report cadastrado.'}</p>
+                  <p className="text-sm text-slate-700">{selectedProject.report || 'Sem report registado.'}</p>
                 </div>
               </div>
             </motion.div>
