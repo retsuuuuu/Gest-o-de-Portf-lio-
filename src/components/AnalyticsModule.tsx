@@ -7,11 +7,10 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  AreaChart,
-  Area,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  Legend
 } from 'recharts';
 import { 
   TrendingUp, 
@@ -42,30 +41,37 @@ const AnalyticsCard = ({ title, value, change, isPositive, icon: Icon }: any) =>
 export const AnalyticsModule = ({ projectsData }: { projectsData: Project[] }) => {
   const stats = {
     total: projectsData.length,
-    atrasados: projectsData.filter(p => p.farol.toLowerCase().includes('atrasado')).length,
-    emAndamento: projectsData.filter(p => p.status === 'Em andamento').length,
-    concluidos: projectsData.filter(p => p.status === 'Concluído').length,
+    atrasados: projectsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')).length,
+    emAndamento: projectsData.filter(p => (p.status || '').toLowerCase() === 'em andamento').length,
+    concluidos: projectsData.filter(p => (p.status || '').toLowerCase() === 'concluído').length,
   };
 
-  const monthlyData = [
-    { name: 'Jan', projetos: 4, concluídos: 2 },
-    { name: 'Fev', projetos: 7, concluídos: 3 },
-    { name: 'Mar', projetos: 9, concluídos: 5 },
-    { name: 'Abr', projetos: 12, concluídos: 8 },
-    { name: 'Mai', projetos: projectsData.length, concluídos: stats.concluidos },
-  ];
-
-  const phaseData = [
-    { name: 'Backlog', value: projectsData.filter(p => p.phase === 'Backlog').length },
-    { name: 'Briefing', value: projectsData.filter(p => p.phase === 'Briefing').length },
-    { name: 'Desenvolvimento', value: projectsData.filter(p => p.phase === 'Desenvolvimento').length },
-    { name: 'Escopo', value: projectsData.filter(p => p.phase === 'Escopo').length },
-    { name: 'Homologação', value: projectsData.filter(p => p.phase === 'Homologação Cliente').length },
-    { name: 'Protótipo', value: projectsData.filter(p => p.phase === 'Protótipo').length },
-    { name: 'Valoração', value: projectsData.filter(p => p.phase === 'Valoração').length },
+  const statusData = [
+    { name: 'Em andamento', value: projectsData.filter(p => (p.status || '').toLowerCase() === 'em andamento').length },
+    { name: 'Pausado', value: projectsData.filter(p => (p.status || '').toLowerCase() === 'pausado').length },
+    { name: 'Impedimento', value: projectsData.filter(p => (p.status || '').toLowerCase() === 'impedimento').length },
+    { name: 'Concluído', value: projectsData.filter(p => (p.status || '').toLowerCase() === 'concluído').length },
+    { name: 'Backlog', value: projectsData.filter(p => (p.status || '').toLowerCase() === 'backlog').length },
   ].filter(d => d.value > 0);
 
-  const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b'];
+  const farolData = [
+    { name: 'No prazo', value: projectsData.filter(p => (p.farol || '').toLowerCase() === 'no prazo').length },
+    { name: 'Atrasado (Cliente)', value: projectsData.filter(p => (p.farol || '').toLowerCase() === 'atrasado (cliente)').length },
+    { name: 'Atrasado (TradeUp)', value: projectsData.filter(p => (p.farol || '').toLowerCase() === 'atrasado (tradeup)').length },
+    { name: 'Concluído', value: projectsData.filter(p => (p.farol || '').toLowerCase() === 'concluído').length },
+  ].filter(d => d.value > 0);
+
+  const phaseData = [
+    { name: 'Backlog', value: projectsData.filter(p => (p.phase || '').toLowerCase() === 'backlog').length },
+    { name: 'Briefing', value: projectsData.filter(p => (p.phase || '').toLowerCase() === 'briefing').length },
+    { name: 'Desenvolvimento', value: projectsData.filter(p => (p.phase || '').toLowerCase() === 'desenvolvimento').length },
+    { name: 'Escopo', value: projectsData.filter(p => (p.phase || '').toLowerCase() === 'escopo').length },
+    { name: 'Homologação', value: projectsData.filter(p => (p.phase || '').toLowerCase() === 'homologação cliente').length },
+    { name: 'Protótipo', value: projectsData.filter(p => (p.phase || '').toLowerCase() === 'protótipo').length },
+    { name: 'Valoração', value: projectsData.filter(p => (p.phase || '').toLowerCase() === 'valoração').length },
+  ].filter(d => d.value > 0);
+
+  const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b', '#10b981', '#3b82f6'];
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -75,32 +81,36 @@ export const AnalyticsModule = ({ projectsData }: { projectsData: Project[] }) =
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <AnalyticsCard title="Total de Projetos" value={stats.total} change="12%" isPositive={true} icon={TrendingUp} />
-        <AnalyticsCard title="Em Andamento" value={stats.emAndamento} change="5%" isPositive={true} icon={Clock} />
-        <AnalyticsCard title="Taxa de Conclusão" value={`${stats.total ? Math.round((stats.concluidos / stats.total) * 100) : 0}%`} change="8%" isPositive={true} icon={CheckCircle2} />
-        <AnalyticsCard title="Projetos Críticos" value={stats.atrasados} change="2%" isPositive={false} icon={AlertCircle} />
+        <AnalyticsCard title="Total de Projetos" value={stats.total} change="Atual" isPositive={true} icon={TrendingUp} />
+        <AnalyticsCard title="Em Andamento" value={stats.emAndamento} change="Ativos" isPositive={true} icon={Clock} />
+        <AnalyticsCard title="Taxa de Conclusão" value={`${stats.total ? Math.round((stats.concluidos / stats.total) * 100) : 0}%`} change="Média" isPositive={true} icon={CheckCircle2} />
+        <AnalyticsCard title="Projetos Críticos" value={stats.atrasados} change="Alerta" isPositive={false} icon={AlertCircle} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-          <h3 className="text-lg font-bold text-slate-900 mb-6">Crescimento do Portfólio</h3>
-          <div className="h-80 w-full">
+          <h3 className="text-lg font-bold text-slate-900 mb-6">Distribuição por Status</h3>
+          <div className="h-80 w-full flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={monthlyData}>
-                <defs>
-                  <linearGradient id="colorProjetos" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
+              <PieChart>
+                <Pie
+                  data={statusData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {statusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
                 <Tooltip 
                   contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                 />
-                <Area type="monotone" dataKey="projetos" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorProjetos)" />
-              </AreaChart>
+                <Legend verticalAlign="bottom" height={36}/>
+              </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
@@ -121,6 +131,32 @@ export const AnalyticsModule = ({ projectsData }: { projectsData: Project[] }) =
                   {phaseData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm lg:col-span-2">
+          <h3 className="text-lg font-bold text-slate-900 mb-6">Saúde do Portfólio (Farol)</h3>
+          <div className="h-80 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={farolData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
+                <Tooltip
+                  cursor={{fill: '#f8fafc'}}
+                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={60}>
+                  {farolData.map((entry, index) => {
+                    let color = '#10b981'; // No prazo
+                    if (entry.name.includes('Atrasado (Cliente)')) color = '#f43f5e';
+                    if (entry.name.includes('Atrasado (TradeUp)')) color = '#fb7185';
+                    if (entry.name === 'Concluído') color = '#3b82f6';
+                    return <Cell key={`cell-${index}`} fill={color} />;
+                  })}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>

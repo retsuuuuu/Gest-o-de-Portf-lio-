@@ -34,12 +34,21 @@ const StatCard = ({ label, value, icon: Icon, color }: { label: string, value: s
 
 const FormField = ({ label, children }: { label: string, children: React.ReactNode }) => (
   <div className="flex flex-col gap-1.5">
-    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{label}</label>
+    <div className="min-h-[20px] flex items-end">
+      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-tight">{label}</label>
+    </div>
     {children}
   </div>
 );
 
 const inputClass = "w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all placeholder:text-slate-400";
+
+const maskDate = (value: string) => {
+  const v = value.replace(/\D/g, '').slice(0, 8);
+  if (v.length >= 5) return `${v.slice(0, 2)}/${v.slice(2, 4)}/${v.slice(4, 8)}`;
+  if (v.length >= 3) return `${v.slice(0, 2)}/${v.slice(2, 4)}`;
+  return v;
+};
 
 const StatusBadge = ({ status }: { status: string }) => {
   const getStyles = () => {
@@ -353,15 +362,15 @@ export default function App() {
                   </FormField>
 
                   <FormField label="Data Base (Baseline)">
-                    <input placeholder="DD/MM/AAAA" value={newProject.baseline} onChange={(e) => setNewProject({...newProject, baseline: e.target.value})} className={inputClass} />
+                    <input placeholder="DD/MM/AAAA" value={newProject.baseline} onChange={(e) => setNewProject({...newProject, baseline: maskDate(e.target.value)})} className={inputClass} />
                   </FormField>
 
                   <FormField label="Data de Entrega">
-                    <input placeholder="DD/MM/AAAA" value={newProject.deliveryDate} onChange={(e) => setNewProject({...newProject, deliveryDate: e.target.value})} className={inputClass} />
+                    <input placeholder="DD/MM/AAAA" value={newProject.deliveryDate} onChange={(e) => setNewProject({...newProject, deliveryDate: maskDate(e.target.value)})} className={inputClass} />
                   </FormField>
 
                   <FormField label="Data Replanejada">
-                    <input placeholder="DD/MM/AAAA" value={newProject.replannedDate} onChange={(e) => setNewProject({...newProject, replannedDate: e.target.value})} className={inputClass} />
+                    <input placeholder="DD/MM/AAAA" value={newProject.replannedDate} onChange={(e) => setNewProject({...newProject, replannedDate: maskDate(e.target.value)})} className={inputClass} />
                   </FormField>
 
                   <div className="md:col-span-2">
@@ -430,15 +439,15 @@ export default function App() {
                   </FormField>
 
                   <FormField label="Data Base (Baseline)">
-                    <input placeholder="DD/MM/AAAA" value={editingProject.baseline} onChange={(e) => setEditingProject({...editingProject, baseline: e.target.value})} className={inputClass} />
+                    <input placeholder="DD/MM/AAAA" value={editingProject.baseline} onChange={(e) => setEditingProject({...editingProject, baseline: maskDate(e.target.value)})} className={inputClass} />
                   </FormField>
 
                   <FormField label="Data de Entrega">
-                    <input placeholder="DD/MM/AAAA" value={editingProject.deliveryDate} onChange={(e) => setEditingProject({...editingProject, deliveryDate: e.target.value})} className={inputClass} />
+                    <input placeholder="DD/MM/AAAA" value={editingProject.deliveryDate} onChange={(e) => setEditingProject({...editingProject, deliveryDate: maskDate(e.target.value)})} className={inputClass} />
                   </FormField>
 
                   <FormField label="Data Replanejada">
-                    <input placeholder="DD/MM/AAAA" value={editingProject.replannedDate} onChange={(e) => setEditingProject({...editingProject, replannedDate: e.target.value})} className={inputClass} />
+                    <input placeholder="DD/MM/AAAA" value={editingProject.replannedDate} onChange={(e) => setEditingProject({...editingProject, replannedDate: maskDate(e.target.value)})} className={inputClass} />
                   </FormField>
 
                   <div className="md:col-span-2">
