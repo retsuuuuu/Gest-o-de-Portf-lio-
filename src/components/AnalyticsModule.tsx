@@ -38,7 +38,7 @@ const AnalyticsCard = ({ title, value, change, isPositive, icon: Icon }: any) =>
   </div>
 );
 
-export const AnalyticsModule = ({ projectsData }: { projectsData: Project[] }) => {
+export const AnalyticsModule = ({ projectsData, onSegmentClick }: { projectsData: Project[], onSegmentClick: (title: string, projects: Project[]) => void }) => {
   const stats = {
     total: projectsData.length,
     atrasados: projectsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')).length,
@@ -81,10 +81,18 @@ export const AnalyticsModule = ({ projectsData }: { projectsData: Project[] }) =
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <AnalyticsCard title="Total de Projetos" value={stats.total} change="Atual" isPositive={true} icon={TrendingUp} />
-        <AnalyticsCard title="Em Andamento" value={stats.emAndamento} change="Ativos" isPositive={true} icon={Clock} />
-        <AnalyticsCard title="Taxa de Conclusão" value={`${stats.total ? Math.round((stats.concluidos / stats.total) * 100) : 0}%`} change="Média" isPositive={true} icon={CheckCircle2} />
-        <AnalyticsCard title="Projetos Críticos" value={stats.atrasados} change="Alerta" isPositive={false} icon={AlertCircle} />
+        <div onClick={() => onSegmentClick("Todos os Projetos", projectsData)} className="cursor-pointer transition-transform hover:scale-[1.02]">
+          <AnalyticsCard title="Total de Projetos" value={stats.total} change="Atual" isPositive={true} icon={TrendingUp} />
+        </div>
+        <div onClick={() => onSegmentClick("Projetos em Andamento", projectsData.filter(p => (p.status || '').toLowerCase() === 'em andamento'))} className="cursor-pointer transition-transform hover:scale-[1.02]">
+          <AnalyticsCard title="Em Andamento" value={stats.emAndamento} change="Ativos" isPositive={true} icon={Clock} />
+        </div>
+        <div onClick={() => onSegmentClick("Projetos Concluídos", projectsData.filter(p => (p.status || '').toLowerCase() === 'concluído'))} className="cursor-pointer transition-transform hover:scale-[1.02]">
+          <AnalyticsCard title="Taxa de Conclusão" value={`${stats.total ? Math.round((stats.concluidos / stats.total) * 100) : 0}%`} change="Média" isPositive={true} icon={CheckCircle2} />
+        </div>
+        <div onClick={() => onSegmentClick("Projetos Críticos (Atrasados)", projectsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')))} className="cursor-pointer transition-transform hover:scale-[1.02]">
+          <AnalyticsCard title="Projetos Críticos" value={stats.atrasados} change="Alerta" isPositive={false} icon={AlertCircle} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -101,9 +109,11 @@ export const AnalyticsModule = ({ projectsData }: { projectsData: Project[] }) =
                   outerRadius={100}
                   paddingAngle={5}
                   dataKey="value"
+                  onClick={(data) => onSegmentClick(`Projetos: ${data.name}`, projectsData.filter(p => (p.status || '').toLowerCase() === data.name.toLowerCase()))}
+                  className="cursor-pointer"
                 >
                   {statusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="outline-none" />
                   ))}
                 </Pie>
                 <Tooltip 
@@ -127,9 +137,15 @@ export const AnalyticsModule = ({ projectsData }: { projectsData: Project[] }) =
                   cursor={{fill: '#f8fafc'}}
                   contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                 />
-                <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={30}>
+                <Bar
+                  dataKey="value"
+                  radius={[0, 4, 4, 0]}
+                  barSize={30}
+                  onClick={(data) => onSegmentClick(`Fase: ${data.name}`, projectsData.filter(p => (p.phase || '').toLowerCase() === data.name.toLowerCase()))}
+                  className="cursor-pointer"
+                >
                   {phaseData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="outline-none" />
                   ))}
                 </Bar>
               </BarChart>
@@ -149,13 +165,19 @@ export const AnalyticsModule = ({ projectsData }: { projectsData: Project[] }) =
                   cursor={{fill: '#f8fafc'}}
                   contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                 />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={60}>
+                <Bar
+                  dataKey="value"
+                  radius={[4, 4, 0, 0]}
+                  barSize={60}
+                  onClick={(data) => onSegmentClick(`Farol: ${data.name}`, projectsData.filter(p => (p.farol || '').toLowerCase() === data.name.toLowerCase()))}
+                  className="cursor-pointer"
+                >
                   {farolData.map((entry, index) => {
                     let color = '#10b981'; // No prazo
                     if (entry.name.includes('Atrasado (Cliente)')) color = '#f43f5e';
                     if (entry.name.includes('Atrasado (TradeUp)')) color = '#fb7185';
                     if (entry.name === 'Concluído') color = '#3b82f6';
-                    return <Cell key={`cell-${index}`} fill={color} />;
+                    return <Cell key={`cell-${index}`} fill={color} className="outline-none" />;
                   })}
                 </Bar>
               </BarChart>

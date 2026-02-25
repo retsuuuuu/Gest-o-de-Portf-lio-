@@ -20,8 +20,8 @@ const SidebarItem = ({ icon: Icon, label, active = false, onClick }: { icon: any
   </div>
 );
 
-const StatCard = ({ label, value, icon: Icon, color }: { label: string, value: string | number, icon: any, color: string }) => (
-  <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
+const StatCard = ({ label, value, icon: Icon, color, onClick }: { label: string, value: string | number, icon: any, color: string, onClick?: () => void }) => (
+  <div onClick={onClick} className={`bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full ${onClick ? 'cursor-pointer hover:border-indigo-200' : ''}`}>
     <div className="flex justify-between items-start mb-4">
       <div className={`p-2 rounded-lg ${color}`}>
         <Icon size={20} className="text-white" />
@@ -46,10 +46,26 @@ const FormField = ({ label, children }: { label: string, children: React.ReactNo
 const inputClass = "w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all placeholder:text-slate-400";
 
 const maskDate = (value: string) => {
+  if (!value) return '';
   const v = value.replace(/\D/g, '').slice(0, 8);
   if (v.length >= 5) return `${v.slice(0, 2)}/${v.slice(2, 4)}/${v.slice(4, 8)}`;
   if (v.length >= 3) return `${v.slice(0, 2)}/${v.slice(2, 4)}`;
   return v;
+};
+
+const formatToDDMMYYYY = (dateStr: string) => {
+  if (!dateStr) return '';
+  if (dateStr.includes('/')) return dateStr; // Already formatted
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch {
+    return dateStr;
+  }
 };
 
 const StatusBadge = ({ status }: { status: string }) => {
@@ -101,6 +117,10 @@ export default function App() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+  const [isListModalOpen, setIsListModalOpen] = useState(false);
+  const [listModalTitle, setListModalTitle] = useState('');
+  const [listModalProjects, setListModalProjects] = useState<Project[]>([]);
+
   useEffect(() => {
     fetchProjects();
   }, []);
@@ -117,11 +137,11 @@ export default function App() {
         name: row['PROJETO'] || 'Sem Nome',
         phase: row['FASE'] || 'Backlog',
         status: row['STATUS'] || 'Backlog',
-        baseline: row['BASELINE'] || '',
+        baseline: formatToDDMMYYYY(row['BASELINE'] || ''),
         report: row['REPORT'] || '',
         farol: row['FAROL'] || 'No prazo',
-        deliveryDate: row['ENTREGA'] || '',
-        replannedDate: row['REPLANEJAMENTO'] || '',
+        deliveryDate: formatToDDMMYYYY(row['ENTREGA'] || ''),
+        replannedDate: formatToDDMMYYYY(row['REPLANEJAMENTO'] || ''),
       }));
       setProjectsData(mapped);
     } catch (error) {
@@ -230,6 +250,12 @@ export default function App() {
     concluidos: projectsData.filter(p => (p.status || '').toLowerCase() === 'concluído').length,
   };
 
+  const handleOpenListModal = (title: string, projects: Project[]) => {
+    setListModalTitle(title);
+    setListModalProjects(projects);
+    setIsListModalOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
       {/* Barra Lateral */}
@@ -246,12 +272,15 @@ export default function App() {
           <SidebarItem icon={BarChart3} label="Análises" active={activeTab === 'Análises'} onClick={() => setActiveTab('Análises')} />
         </nav>
         <div className="p-6 border-t border-slate-100">
-          <div className="bg-indigo-600 rounded-2xl p-6 text-white relative overflow-hidden shadow-lg shadow-indigo-200">
+          <div
+            onClick={() => handleOpenListModal("Todos os Projetos", projectsData)}
+            className="bg-indigo-600 rounded-2xl p-6 text-white relative overflow-hidden shadow-lg shadow-indigo-200 cursor-pointer hover:bg-indigo-700 transition-colors group"
+          >
             <div className="relative z-10">
               <h4 className="text-sm font-bold opacity-80 mb-1">Status Geral</h4>
-              <p className="text-2xl font-bold mb-4">{projectsData.length} Projetos</p>
+              <p className="text-2xl font-bold mb-4 group-hover:scale-110 transition-transform origin-left">{projectsData.length} Projetos</p>
             </div>
-            <div className="absolute -right-4 -bottom-4 opacity-20 transform rotate-12"><BarChart3 size={120} /></div>
+            <div className="absolute -right-4 -bottom-4 opacity-20 transform rotate-12 group-hover:rotate-0 transition-transform duration-500"><BarChart3 size={120} /></div>
           </div>
         </div>
       </aside>
@@ -278,11 +307,41 @@ export default function App() {
           {activeTab === 'Visão Geral' ? (
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                <StatCard label="PROJETOS ATRASADOS" value={stats.atrasados} icon={AlertCircle} color="bg-rose-500" />
-                <StatCard label="PROJETOS EM ANDAMENTO" value={stats.emAndamento} icon={Clock} color="bg-blue-500" />
-                <StatCard label="PROJETOS PAUSADOS" value={stats.pausados} icon={PauseCircle} color="bg-amber-500" />
-                <StatCard label="PROJETOS EM IMPEDIMENTO" value={stats.impedimento} icon={ShieldAlert} color="bg-slate-500" />
-                <StatCard label="PROJETOS CONCLUÍDOS" value={stats.concluidos} icon={CheckCircle2} color="bg-emerald-500" />
+                <StatCard
+                  label="PROJETOS ATRASADOS"
+                  value={stats.atrasados}
+                  icon={AlertCircle}
+                  color="bg-rose-500"
+                  onClick={() => handleOpenListModal("Projetos Atrasados", projectsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')))}
+                />
+                <StatCard
+                  label="PROJETOS EM ANDAMENTO"
+                  value={stats.emAndamento}
+                  icon={Clock}
+                  color="bg-blue-500"
+                  onClick={() => handleOpenListModal("Projetos em Andamento", projectsData.filter(p => (p.status || '').toLowerCase() === 'em andamento'))}
+                />
+                <StatCard
+                  label="PROJETOS PAUSADOS"
+                  value={stats.pausados}
+                  icon={PauseCircle}
+                  color="bg-amber-500"
+                  onClick={() => handleOpenListModal("Projetos Pausados", projectsData.filter(p => (p.status || '').toLowerCase() === 'pausado'))}
+                />
+                <StatCard
+                  label="PROJETOS EM IMPEDIMENTO"
+                  value={stats.impedimento}
+                  icon={ShieldAlert}
+                  color="bg-slate-500"
+                  onClick={() => handleOpenListModal("Projetos em Impedimento", projectsData.filter(p => (p.status || '').toLowerCase() === 'impedimento'))}
+                />
+                <StatCard
+                  label="PROJETOS CONCLUÍDOS"
+                  value={stats.concluidos}
+                  icon={CheckCircle2}
+                  color="bg-emerald-500"
+                  onClick={() => handleOpenListModal("Projetos Concluídos", projectsData.filter(p => (p.status || '').toLowerCase() === 'concluído'))}
+                />
               </div>
 
               <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -311,8 +370,11 @@ export default function App() {
                     <tbody className="divide-y divide-slate-100">
                       {filteredProjects.map((project) => (
                         <tr key={project.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-6 py-4">
-                            <p className="text-sm font-bold text-slate-900">{project.name}</p>
+                          <td
+                            className="px-6 py-4 cursor-pointer group"
+                            onClick={() => { setSelectedProject(project); setIsDetailsOpen(true); }}
+                          >
+                            <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{project.name}</p>
                             <p className="text-[10px] text-slate-500">{project.code} | {project.initiative}</p>
                           </td>
                           <td className="px-6 py-4"><span className="text-sm text-slate-600">{project.phase}</span></td>
@@ -339,7 +401,7 @@ export default function App() {
               </section>
             </>
           ) : (
-            <AnalyticsModule projectsData={projectsData} />
+            <AnalyticsModule projectsData={projectsData} onSegmentClick={handleOpenListModal} />
           )}
         </div>
       </main>
@@ -500,8 +562,42 @@ export default function App() {
           </div>
         )}
 
+        {isListModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 relative my-8">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold">{listModalTitle}</h2>
+                <button onClick={() => setIsListModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                {listModalProjects.length > 0 ? (
+                  listModalProjects.map((project) => (
+                    <div
+                      key={project.id}
+                      onClick={() => { setSelectedProject(project); setIsDetailsOpen(true); }}
+                      className="p-4 bg-slate-50 rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition-all cursor-pointer group"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{project.name}</p>
+                          <p className="text-xs text-slate-500 font-mono">{project.code}</p>
+                        </div>
+                        <Eye size={16} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center py-8 text-slate-500 text-sm">Nenhum projeto encontrado nesta categoria.</p>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+
         {isDetailsOpen && selectedProject && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-8 relative">
               <button onClick={() => setIsDetailsOpen(false)} className="absolute top-4 right-4 p-2 text-slate-400 hover:bg-slate-100 rounded-full"><X size={20}/></button>
               <h2 className="text-2xl font-bold mb-1">{selectedProject.name}</h2>
