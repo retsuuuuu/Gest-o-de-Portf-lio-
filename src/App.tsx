@@ -12,7 +12,7 @@ import { AnalyticsModule } from './components/AnalyticsModule';
 import { NotificationsModal } from './components/NotificationsModal';
 import { SettingsModal } from './components/SettingsModal';
 
-const API_URL = "https://script.google.com/macros/s/AKfycby1pLh3NjbDiMVWDdxmhf0jb7fwuSJq6Oh6ttlBYb5gAJf7BjukdC4qm-tThzU9YHGTtA/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycby5yox4sLMdyQzzSq4wLwphOts9qRP39vpkHerEs29l8i0dFvfdaMDhRrOIX1DTan5gDg/exec";
 
 const SidebarItem = ({ icon: Icon, label, active = false, onClick }: { icon: any, label: string, active?: boolean, onClick?: () => void }) => (
   <div onClick={onClick} className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all ${active ? 'bg-indigo-50 text-indigo-600 font-medium' : 'text-slate-500 hover:bg-slate-50'}`}>

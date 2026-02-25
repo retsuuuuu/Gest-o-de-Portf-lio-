@@ -14,6 +14,7 @@ if (!CLERK_SECRET_KEY) {
 
 app.get('/api/users', async (req, res) => {
   const { role } = req.query;
+  console.log(`Fetching users for role: ${role}`);
   try {
     const response = await fetch('https://api.clerk.com/v1/users', {
       headers: {
@@ -27,10 +28,24 @@ app.get('/api/users', async (req, res) => {
         throw new Error(`Clerk API error: ${response.status} ${err}`);
     }
 
-    const users = await response.json();
+    const data = await response.json();
 
-    // Filter by role in publicMetadata
-    const filtered = users.filter(user => user.public_metadata?.role === role);
+    // Some endpoints or SDKs might return { data: [...] }, but v1/users usually returns an array.
+    // However, let's be safe.
+    const users = Array.isArray(data) ? data : (data.data || []);
+
+    console.log(`Total users fetched: ${users.length}`);
+
+    // Filter by role in public_metadata
+    const filtered = users.filter(user => {
+      const userRole = user.public_metadata?.role;
+      return userRole === role;
+    });
+
+    console.log(`Filtered users: ${filtered.length}`);
+    if (filtered.length === 0 && users.length > 0) {
+        console.log("Example metadata from first user:", users[0].public_metadata);
+    }
 
     res.json(filtered.map(u => ({
       id: u.id,
@@ -62,6 +77,7 @@ app.post('/api/init-user-role', async (req, res) => {
     const user = await getResponse.json();
 
     if (!user.public_metadata?.role) {
+      console.log(`Initializing role for user ${userId}`);
       const updateResponse = await fetch(`https://api.clerk.com/v1/users/${userId}/metadata`, {
         method: 'PATCH',
         headers: {
