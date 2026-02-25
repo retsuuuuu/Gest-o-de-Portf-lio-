@@ -1,20 +1,20 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
-import { ClerkProvider } from '@clerk/clerk-react'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { ClerkProvider } from '@clerk/clerk-react';
+import App from './App.tsx';
+import './index.css';
 
-// Captura a chave configurada na Vercel
-const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
+// Import your publishable key
+const PUBLISHABLE_KEY = (import.meta as any).env.VITE_CLERK_PUBLISHABLE_KEY;
 
 if (!PUBLISHABLE_KEY) {
-  throw new Error("Missing Publishable Key. Verifique as Environment Variables na Vercel.")
+  throw new Error("Missing Publishable Key. Please add VITE_CLERK_PUBLISHABLE_KEY to your .env file.");
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
     <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
       <App />
     </ClerkProvider>
-  </React.StrictMode>,
-)
+  </StrictMode>,
+);
