@@ -21,23 +21,23 @@ const SidebarItem = ({ icon: Icon, label, active = false, onClick }: { icon: any
 );
 
 const StatCard = ({ label, value, icon: Icon, color, onClick }: { label: string, value: string | number, icon: any, color: string, onClick?: () => void }) => (
-  <div onClick={onClick} className={`bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full ${onClick ? 'cursor-pointer hover:border-indigo-200' : ''}`}>
+  <div onClick={onClick} className={`bg-white p-7 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full ${onClick ? 'cursor-pointer hover:border-indigo-200' : ''}`}>
     <div className="flex justify-between items-start mb-4">
-      <div className={`p-2 rounded-lg ${color}`}>
-        <Icon size={20} className="text-white" />
+      <div className={`p-2.5 rounded-xl ${color} shadow-lg shadow-current/10`}>
+        <Icon size={22} className="text-white" />
       </div>
     </div>
     <div className="flex-1 flex flex-col justify-between">
-      <h3 className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-2 min-h-[32px] flex items-center">{label}</h3>
-      <p className="text-2xl font-bold text-slate-900">{value}</p>
+      <h3 className="text-slate-500 text-[11px] font-bold uppercase tracking-wider mb-2 min-h-[32px] flex items-center leading-tight">{label}</h3>
+      <p className="text-3xl font-bold text-slate-900 tracking-tight">{value}</p>
     </div>
   </div>
 );
 
 const FormField = ({ label, children }: { label: string, children: React.ReactNode }) => (
-  <div className="flex flex-col gap-1.5">
+  <div className="flex flex-col gap-2">
     <div className="min-h-[20px] flex items-end">
-      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-tight">{label}</label>
+      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider leading-none">{label}</label>
     </div>
     {children}
   </div>
@@ -260,14 +260,14 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
       {/* Barra Lateral */}
       <aside className="w-64 bg-white border-r border-slate-200 flex flex-col hidden lg:flex">
-        <div className="p-6 flex items-center gap-3">
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-            <LayoutDashboard size={20} className="text-white" />
+        <div className="p-8 flex items-center gap-3">
+          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
+            <LayoutDashboard size={24} className="text-white" />
           </div>
-          <h1 className="font-bold text-sm tracking-tight leading-tight">Gestão de Portfólio | TradeUp</h1>
+          <h1 className="font-bold text-base tracking-tight leading-tight text-slate-900">Portfolio <br/><span className="text-indigo-600">TradeUp</span></h1>
         </div>
-        <nav className="flex-1 px-4 space-y-1">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-4 mb-2 mt-4">Navegação</p>
+        <nav className="flex-1 px-4 space-y-1.5">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest px-4 mb-3 mt-4">Navegação</p>
           <SidebarItem icon={LayoutDashboard} label="Visão Geral" active={activeTab === 'Visão Geral'} onClick={() => setActiveTab('Visão Geral')} />
           <SidebarItem icon={BarChart3} label="Análises" active={activeTab === 'Análises'} onClick={() => setActiveTab('Análises')} />
         </nav>
@@ -359,23 +359,23 @@ export default function App() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-slate-50/50 border-b border-slate-100 text-[10px] uppercase tracking-widest text-slate-400">
-                        <th className="px-6 py-4 font-bold">Projeto</th>
-                        <th className="px-6 py-4 font-bold">Fase</th>
-                        <th className="px-6 py-4 font-bold">Status</th>
-                        <th className="px-6 py-4 font-bold">Farol</th>
-                        <th className="px-6 py-4 font-bold text-right">Ações</th>
+                      <tr className="bg-slate-50/50 border-b border-slate-100 text-[11px] uppercase tracking-wider text-slate-400">
+                        <th className="px-6 py-5 font-bold">Projeto</th>
+                        <th className="px-6 py-5 font-bold">Fase</th>
+                        <th className="px-6 py-5 font-bold">Status</th>
+                        <th className="px-6 py-5 font-bold">Farol</th>
+                        <th className="px-6 py-5 font-bold text-right">Ações</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {filteredProjects.map((project) => (
                         <tr key={project.id} className="hover:bg-slate-50/50 transition-colors">
                           <td
-                            className="px-6 py-4 cursor-pointer group"
+                            className="px-6 py-5 cursor-pointer group"
                             onClick={() => { setSelectedProject(project); setIsDetailsOpen(true); }}
                           >
-                            <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{project.name}</p>
-                            <p className="text-[10px] text-slate-500">{project.code} | {project.initiative}</p>
+                            <p className="text-base font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors leading-snug mb-0.5">{project.name}</p>
+                            <p className="text-[11px] text-slate-500 font-medium">{project.code} <span className="mx-1 opacity-30">•</span> {project.initiative}</p>
                           </td>
                           <td className="px-6 py-4"><span className="text-sm text-slate-600">{project.phase}</span></td>
                           <td className="px-6 py-4"><StatusBadge status={project.status} /></td>
@@ -411,14 +411,14 @@ export default function App() {
         {isCreateOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-6 my-8">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold">Novo Projeto</h2>
-                <button onClick={() => setIsCreateOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
-                  <X size={20} />
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-bold text-slate-900">Novo Projeto</h2>
+                <button onClick={() => setIsCreateOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors p-2 hover:bg-slate-50 rounded-full">
+                  <X size={24} />
                 </button>
               </div>
-              <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(newProject, false); }} className="space-y-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(newProject, false); }} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="md:col-span-2">
                     <FormField label="Nome do Projeto">
                       <input required placeholder="Nome do Projeto" value={newProject.name} onChange={(e) => setNewProject({...newProject, name: e.target.value})} className={inputClass} />
@@ -488,14 +488,14 @@ export default function App() {
         {isEditOpen && editingProject && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-6 my-8">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold">Editar Projeto</h2>
-                <button onClick={() => setIsEditOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
-                  <X size={20} />
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-bold text-slate-900">Editar Projeto</h2>
+                <button onClick={() => setIsEditOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors p-2 hover:bg-slate-50 rounded-full">
+                  <X size={24} />
                 </button>
               </div>
-              <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(editingProject, true); }} className="space-y-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(editingProject, true); }} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="md:col-span-2">
                     <FormField label="Nome do Projeto">
                       <input required value={editingProject.name} onChange={(e) => setEditingProject({...editingProject, name: e.target.value})} className={inputClass} />
@@ -566,9 +566,9 @@ export default function App() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto">
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 relative my-8">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold">{listModalTitle}</h2>
-                <button onClick={() => setIsListModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
-                  <X size={20} />
+                <h2 className="text-2xl font-bold text-slate-900">{listModalTitle}</h2>
+                <button onClick={() => setIsListModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors p-2 hover:bg-slate-50 rounded-full">
+                  <X size={24} />
                 </button>
               </div>
               <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
