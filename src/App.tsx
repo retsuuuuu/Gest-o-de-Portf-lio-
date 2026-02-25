@@ -83,6 +83,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 const FarolIndicator = ({ farol }: { farol: string }) => {
+  const isDelayed = farol?.toLowerCase().includes('atrasado');
   const getColor = () => {
     const f = farol?.toLowerCase() || '';
     if (f.includes('atrasado')) return 'bg-rose-500';
@@ -91,9 +92,12 @@ const FarolIndicator = ({ farol }: { farol: string }) => {
     return 'bg-amber-500';
   };
   return (
-    <div className="flex items-center gap-2">
-      <div className={`w-2 h-2 rounded-full ${getColor()}`} />
-      <span className="text-xs text-slate-600">{farol || 'N/A'}</span>
+    <div className={`flex items-center gap-2 px-2 py-1 rounded-lg transition-colors ${isDelayed ? 'bg-rose-100/50' : ''}`}>
+      <div className={`relative flex items-center justify-center ${isDelayed ? 'w-3 h-3' : 'w-2 h-2'}`}>
+        {isDelayed && <div className="absolute inset-0 bg-rose-500 rounded-full animate-ping opacity-40" />}
+        <div className={`rounded-full shadow-sm relative z-10 ${isDelayed ? 'w-2 h-2' : 'w-full h-full'} ${getColor()}`} />
+      </div>
+      <span className={`text-xs ${isDelayed ? 'text-rose-700 font-bold' : 'text-slate-600'}`}>{farol || 'N/A'}</span>
     </div>
   );
 };
@@ -383,40 +387,39 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {filteredProjects.map((project) => (
-                        <tr
-                          key={project.id}
-                          className={`hover:bg-slate-50/50 transition-colors relative ${
-                            (project.farol || '').toLowerCase().includes('atrasado')
-                              ? 'bg-rose-50/30 border-l-2 border-rose-500'
-                              : ''
-                          }`}
-                        >
-                          <td
-                            className="px-6 py-5 cursor-pointer group"
-                            onClick={() => { setSelectedProject(project); setIsDetailsOpen(true); }}
+                      {filteredProjects.map((project) => {
+                        const isDelayed = (project.farol || '').toLowerCase().includes('atrasado');
+                        return (
+                          <tr
+                            key={project.id}
+                            className={`hover:bg-slate-50/50 transition-colors ${isDelayed ? 'bg-rose-50/40' : ''}`}
                           >
-                            <p className="text-base font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors leading-snug mb-0.5">{project.name}</p>
-                            <p className="text-[11px] text-slate-500 font-medium">{project.code} <span className="mx-1 opacity-30">•</span> {project.initiative}</p>
-                          </td>
-                          <td className="px-6 py-4"><span className="text-sm text-slate-600">{project.phase}</span></td>
-                          <td className="px-6 py-4"><StatusBadge status={project.status} /></td>
-                          <td className="px-6 py-4"><FarolIndicator farol={project.farol} /></td>
-                          <td className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <button onClick={() => { setSelectedProject(project); setIsDetailsOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg">
-                                <Eye size={16} />
-                              </button>
-                              <button onClick={() => { setEditingProject(project); setIsEditOpen(true); }} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
-                                <Pencil size={16} />
-                              </button>
-                              <button onClick={() => handleDeleteProject(project)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg">
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                            <td
+                              className={`px-6 py-5 cursor-pointer group ${isDelayed ? 'border-l-4 border-rose-600' : ''}`}
+                              onClick={() => { setSelectedProject(project); setIsDetailsOpen(true); }}
+                            >
+                              <p className="text-base font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors leading-snug mb-0.5">{project.name}</p>
+                              <p className="text-[11px] text-slate-500 font-medium">{project.code} <span className="mx-1 opacity-30">•</span> {project.initiative}</p>
+                            </td>
+                            <td className="px-6 py-4"><span className="text-sm text-slate-600">{project.phase}</span></td>
+                            <td className="px-6 py-4"><StatusBadge status={project.status} /></td>
+                            <td className="px-6 py-4"><FarolIndicator farol={project.farol} /></td>
+                            <td className="px-6 py-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <button onClick={() => { setSelectedProject(project); setIsDetailsOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg">
+                                  <Eye size={16} />
+                                </button>
+                                <button onClick={() => { setEditingProject(project); setIsEditOpen(true); }} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
+                                  <Pencil size={16} />
+                                </button>
+                                <button onClick={() => handleDeleteProject(project)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg">
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -595,21 +598,28 @@ export default function App() {
               </div>
               <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
                 {listModalProjects.length > 0 ? (
-                  listModalProjects.map((project) => (
-                    <div
-                      key={project.id}
-                      onClick={() => { setSelectedProject(project); setIsDetailsOpen(true); }}
-                      className="p-4 bg-slate-50 rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition-all cursor-pointer group"
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{project.name}</p>
-                          <p className="text-xs text-slate-500 font-mono">{project.code}</p>
+                  listModalProjects.map((project) => {
+                    const isDelayed = (project.farol || '').toLowerCase().includes('atrasado');
+                    return (
+                      <div
+                        key={project.id}
+                        onClick={() => { setSelectedProject(project); setIsDetailsOpen(true); }}
+                        className={`p-4 rounded-2xl transition-all cursor-pointer group border ${
+                          isDelayed
+                            ? 'bg-rose-50/50 border-rose-100 border-l-4 border-l-rose-600 hover:bg-rose-100/50'
+                            : 'bg-slate-50 border-transparent hover:bg-indigo-50 hover:border-indigo-100'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className={`text-sm font-bold transition-colors ${isDelayed ? 'text-rose-900' : 'text-slate-900 group-hover:text-indigo-600'}`}>{project.name}</p>
+                            <p className="text-xs text-slate-500 font-mono">{project.code}</p>
+                          </div>
+                          <Eye size={16} className={`transition-colors ${isDelayed ? 'text-rose-400' : 'text-slate-300 group-hover:text-indigo-500'}`} />
                         </div>
-                        <Eye size={16} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <p className="text-center py-8 text-slate-500 text-sm">Nenhum projeto encontrado nesta categoria.</p>
                 )}
