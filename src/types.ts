@@ -20,6 +20,10 @@ export interface Project {
   description?: string;
   location?: string;
   budget?: string;
+  po?: string;
+  ux?: string;
+  qa?: string;
+  ti?: string;
 }
 
 export type Priority = 'Star' | 'Heart' | 'Like';

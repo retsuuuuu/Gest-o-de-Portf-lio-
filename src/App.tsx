@@ -5,14 +5,14 @@ import {
   AlertCircle, CheckCircle2, Clock, Filter, PauseCircle, ShieldAlert,
   Eye, Pencil, X, Save, Calendar, Trash2, ArrowLeft
 } from 'lucide-react';
-import { SignedIn, SignedOut, SignIn, UserButton } from '@clerk/clerk-react';
+import { useUser, SignedIn, SignedOut, SignIn, UserButton } from '@clerk/clerk-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Project } from './types';
 import { AnalyticsModule } from './components/AnalyticsModule';
 import { NotificationsModal } from './components/NotificationsModal';
 import { SettingsModal } from './components/SettingsModal';
 
-const API_URL = "https://script.google.com/macros/s/AKfycby5yox4sLMdyQzzSq4wLwphOts9qRP39vpkHerEs29l8i0dFvfdaMDhRrOIX1DTan5gDg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycby1pLh3NjbDiMVWDdxmhf0jb7fwuSJq6Oh6ttlBYb5gAJf7BjukdC4qm-tThzU9YHGTtA/exec";
 
 const SidebarItem = ({ icon: Icon, label, active = false, onClick }: { icon: any, label: string, active?: boolean, onClick?: () => void }) => (
   <div onClick={onClick} className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all ${active ? 'bg-indigo-50 text-indigo-600 font-medium' : 'text-slate-500 hover:bg-slate-50'}`}>
@@ -98,7 +98,79 @@ const FarolIndicator = ({ farol }: { farol: string }) => {
   );
 };
 
-const ProjectDetailsView = ({ project, onBack, onEdit }: { project: Project, onBack: () => void, onEdit: () => void }) => {
+const TeamMemberSelector = ({ label, role, currentMember, onSelect }: { label: string, role: string, currentMember?: string, onSelect: (name: string) => void }) => {
+  const [users, setUsers] = useState<{id: string, name: string}[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && users.length === 0) {
+      fetchUsers();
+    }
+  }, [isOpen]);
+
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/users?role=${role}`);
+      const data = await res.json();
+      setUsers(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="relative group">
+      <div className="flex items-center justify-between mb-1">
+        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</label>
+      </div>
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-indigo-200 cursor-pointer transition-all"
+      >
+        <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[10px] font-bold text-slate-400 border border-slate-100 shadow-sm">
+          {currentMember ? currentMember.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?'}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-slate-900 truncate">{currentMember || 'Not assigned'}</p>
+        </div>
+        <Plus size={14} className={`text-slate-400 transition-transform ${isOpen ? 'rotate-45' : ''}`} />
+      </div>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-xl shadow-xl z-20 max-h-48 overflow-y-auto"
+          >
+            {isLoading ? (
+              <div className="p-4 text-center text-xs text-slate-400">Loading...</div>
+            ) : users.length > 0 ? (
+              users.map(u => (
+                <div
+                  key={u.id}
+                  onClick={() => { onSelect(u.name); setIsOpen(false); }}
+                  className="px-4 py-2 text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer transition-colors"
+                >
+                  {u.name}
+                </div>
+              ))
+            ) : (
+              <div className="p-4 text-center text-xs text-slate-400">No {role} users found</div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const ProjectDetailsView = ({ project, onBack, onEdit, onPartialUpdate }: { project: Project, onBack: () => void, onEdit: () => void, onPartialUpdate: (field: string, value: string) => void }) => {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header & Breadcrumbs */}
@@ -233,24 +305,32 @@ const ProjectDetailsView = ({ project, onBack, onEdit }: { project: Project, onB
         <div className="space-y-8">
           <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-8 space-y-6">
             <h3 className="text-base font-bold text-slate-900">Project Team</h3>
-            <div className="space-y-4">
-               {[
-                 { name: 'Sarah Miller', role: 'Project Lead', initial: 'SM' },
-                 { name: 'David Chen', role: 'Structural Engineer', initial: 'DC' },
-                 { name: 'Lena Rodriguez', role: 'Compliance Officer', initial: 'LR' }
-               ].map(m => (
-                 <div key={m.name} className="flex items-center gap-3">
-                   <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-xs font-bold text-slate-600 border-2 border-white shadow-sm">{m.initial}</div>
-                   <div>
-                     <p className="text-sm font-bold text-slate-900">{m.name}</p>
-                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{m.role}</p>
-                   </div>
-                 </div>
-               ))}
+            <div className="space-y-6">
+               <TeamMemberSelector
+                label="Product Owner"
+                role="P.O"
+                currentMember={project.po}
+                onSelect={(name) => onPartialUpdate('PO', name)}
+               />
+               <TeamMemberSelector
+                label="UX Designer"
+                role="UX"
+                currentMember={project.ux}
+                onSelect={(name) => onPartialUpdate('UX', name)}
+               />
+               <TeamMemberSelector
+                label="QA Engineer"
+                role="QA"
+                currentMember={project.qa}
+                onSelect={(name) => onPartialUpdate('QA', name)}
+               />
+               <TeamMemberSelector
+                label="Lead Developer"
+                role="TI"
+                currentMember={project.ti}
+                onSelect={(name) => onPartialUpdate('TI', name)}
+               />
             </div>
-            <button className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 text-xs font-bold uppercase tracking-widest hover:border-indigo-300 hover:text-indigo-600 transition-all">
-              + Add Member
-            </button>
           </div>
 
           <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-8 space-y-6">
@@ -277,6 +357,7 @@ const ProjectDetailsView = ({ project, onBack, onEdit }: { project: Project, onB
 }
 
 export default function App() {
+  const { user } = useUser();
   const [view, setView] = useState<'dashboard' | 'details'>('dashboard');
   const [activeTab, setActiveTab] = useState('Visão Geral');
   const [searchQuery, setSearchQuery] = useState('');
@@ -304,6 +385,24 @@ export default function App() {
     fetchProjects();
   }, []);
 
+  useEffect(() => {
+    if (user && !user.publicMetadata?.role) {
+      initUserRole(user.id);
+    }
+  }, [user]);
+
+  const initUserRole = async (userId: string) => {
+    try {
+      await fetch('/api/init-user-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+    } catch (e) {
+      console.error("Erro ao inicializar role do usuário:", e);
+    }
+  };
+
   const fetchProjects = async () => {
     try {
       const response = await fetch(API_URL);
@@ -325,6 +424,10 @@ export default function App() {
         description: row['DESCRIPTION'] || '',
         location: row['LOCATION'] || '',
         budget: row['BUDGET'] || '',
+        po: row['PO'] || row['P.O'] || '',
+        ux: row['UX'] || '',
+        qa: row['QA'] || '',
+        ti: row['TI'] || '',
       }));
       setProjectsData(mapped);
     } catch (error) {
@@ -382,6 +485,37 @@ export default function App() {
       console.error("Erro crítico de submissão:", error);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handlePartialUpdate = async (projectCode: string, field: string, value: string) => {
+    const payload = {
+      action: "update",
+      payload: {
+        "CODIGO PROJETO": projectCode,
+        [field]: value
+      }
+    };
+
+    try {
+      await fetch(API_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+
+      const fieldKey = field.toLowerCase().replace('.', '') as keyof Project;
+
+      setProjectsData(prev => prev.map(p =>
+        p.code === projectCode ? { ...p, [fieldKey]: value } : p
+      ));
+
+      if (selectedProject?.code === projectCode) {
+        setSelectedProject(prev => prev ? { ...prev, [fieldKey]: value } : null);
+      }
+    } catch (error) {
+      console.error("Erro no update parcial:", error);
     }
   };
 
@@ -505,6 +639,7 @@ export default function App() {
               project={selectedProject}
               onBack={() => setView('dashboard')}
               onEdit={() => { setEditingProject(selectedProject); setIsEditOpen(true); }}
+              onPartialUpdate={(field, value) => handlePartialUpdate(selectedProject.code, field, value)}
             />
           ) : activeTab === 'Visão Geral' ? (
             <>
