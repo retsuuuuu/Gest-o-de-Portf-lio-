@@ -184,7 +184,7 @@ export default function App() {
 
       // Atualização Otimista da Interface
       if (isEdit) {
-        setProjectsData(prev => prev.map(p => p.id === projectToSave.id ? { ...p, ...projectToSave } as Project : p));
+        setProjectsData(prev => prev.map(p => p.id === projectToSave.id ? { ...p, ...projectToSave, code } as Project : p));
         setIsEditOpen(false);
       } else {
         const newProj: Project = { ...projectToSave, code, id: Date.now().toString() } as Project;
@@ -316,13 +316,19 @@ export default function App() {
           {activeTab === 'Visão Geral' ? (
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                <StatCard
-                  label="PROJETOS ATRASADOS"
-                  value={stats.atrasados}
-                  icon={AlertCircle}
-                  color="bg-rose-500"
-                  onClick={() => handleOpenListModal("Projetos Atrasados", projectsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')))}
-                />
+                <motion.div
+                  animate={stats.atrasados > 0 ? { scale: [1, 1.02, 1] } : {}}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="h-full"
+                >
+                  <StatCard
+                    label="PROJETOS ATRASADOS"
+                    value={stats.atrasados}
+                    icon={AlertCircle}
+                    color="bg-rose-500"
+                    onClick={() => handleOpenListModal("Projetos Atrasados", projectsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')))}
+                  />
+                </motion.div>
                 <StatCard
                   label="PROJETOS EM ANDAMENTO"
                   value={stats.emAndamento}
@@ -378,7 +384,14 @@ export default function App() {
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {filteredProjects.map((project) => (
-                        <tr key={project.id} className="hover:bg-slate-50/50 transition-colors">
+                        <tr
+                          key={project.id}
+                          className={`hover:bg-slate-50/50 transition-colors relative ${
+                            (project.farol || '').toLowerCase().includes('atrasado')
+                              ? 'bg-rose-50/30 border-l-2 border-rose-500'
+                              : ''
+                          }`}
+                        >
                           <td
                             className="px-6 py-5 cursor-pointer group"
                             onClick={() => { setSelectedProject(project); setIsDetailsOpen(true); }}
@@ -634,8 +647,14 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
-          {isNotificationsOpen && <NotificationsModal onClose={() => setIsNotificationsOpen(false)} />}
-          {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
+      <NotificationsModal
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+      />
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
         </div>
       </SignedIn>
     </>
