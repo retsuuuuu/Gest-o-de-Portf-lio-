@@ -17,6 +17,9 @@ export interface Project {
   report: string;
   replanning?: string;
   farol: string;
+  description?: string;
+  location?: string;
+  budget?: string;
 }
 
 export type Priority = 'Star' | 'Heart' | 'Like';

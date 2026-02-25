@@ -3,7 +3,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { 
   LayoutDashboard, BarChart3, Search, Bell, Settings, Plus,
   AlertCircle, CheckCircle2, Clock, Filter, PauseCircle, ShieldAlert,
-  Eye, Pencil, X, Save, Calendar, Trash2
+  Eye, Pencil, X, Save, Calendar, Trash2, ArrowLeft
 } from 'lucide-react';
 import { SignedIn, SignedOut, SignIn, UserButton } from '@clerk/clerk-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -12,7 +12,7 @@ import { AnalyticsModule } from './components/AnalyticsModule';
 import { NotificationsModal } from './components/NotificationsModal';
 import { SettingsModal } from './components/SettingsModal';
 
-const API_URL = "https://script.google.com/macros/s/AKfycbxgmfIEBWy3dOKpiWfNwDJR_OmBtr6zipzfLjCR_RIEAoZRRNjT2CxkgAKSNIVfD8kgPg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycby5yox4sLMdyQzzSq4wLwphOts9qRP39vpkHerEs29l8i0dFvfdaMDhRrOIX1DTan5gDg/exec";
 
 const SidebarItem = ({ icon: Icon, label, active = false, onClick }: { icon: any, label: string, active?: boolean, onClick?: () => void }) => (
   <div onClick={onClick} className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all ${active ? 'bg-indigo-50 text-indigo-600 font-medium' : 'text-slate-500 hover:bg-slate-50'}`}>
@@ -98,7 +98,186 @@ const FarolIndicator = ({ farol }: { farol: string }) => {
   );
 };
 
+const ProjectDetailsView = ({ project, onBack, onEdit }: { project: Project, onBack: () => void, onEdit: () => void }) => {
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Header & Breadcrumbs */}
+      <div className="flex flex-col gap-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button onClick={onBack} className="flex items-center gap-2 text-indigo-600 font-bold text-xs uppercase tracking-widest hover:bg-indigo-50 px-3 py-2 rounded-lg transition-all">
+              <ArrowLeft size={16} />
+              Dashboard
+            </button>
+            <div className="h-6 w-px bg-slate-200 mx-2" />
+            <div className="flex items-center gap-2">
+              <LayoutDashboard size={20} className="text-indigo-600" />
+              <h2 className="font-bold text-slate-900">Project Details</h2>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg"><Bell size={20}/></button>
+            <button className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg"><Settings size={20}/></button>
+          </div>
+        </div>
+
+        <nav className="flex text-[11px] font-bold uppercase tracking-widest text-slate-400 gap-2 items-center">
+          <span>Workspace</span>
+          <span className="text-slate-300">›</span>
+          <span>Active Projects</span>
+          <span className="text-slate-300">›</span>
+          <span className="text-indigo-600">{project.initiative}</span>
+        </nav>
+      </div>
+
+      {/* Main Info Card */}
+      <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
+        <div className="p-10">
+          <div className="flex justify-between items-start mb-8">
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-bold uppercase tracking-widest rounded-full">{project.type}</span>
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-widest rounded-full">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  Active Report
+                </div>
+              </div>
+              <h1 className="text-5xl font-bold text-slate-900 tracking-tight leading-none">{project.name}</h1>
+            </div>
+            <button onClick={onEdit} className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
+              <Pencil size={18} /> Edit Project
+            </button>
+          </div>
+
+          <div className="grid grid-cols-3 border-t border-slate-100 pt-8 mt-4">
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Project Code</p>
+              <p className="text-xl font-bold text-slate-900">{project.code}</p>
+            </div>
+            <div className="space-y-1 border-x border-slate-100 px-10">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Baseline Date</p>
+              <p className="text-xl font-bold text-slate-900">{project.baseline || 'Not set'}</p>
+            </div>
+            <div className="space-y-1 pl-10">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Replanning Date</p>
+              <p className="text-xl font-bold text-slate-900">{project.replannedDate || 'No replanning'}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column */}
+        <div className="lg:col-span-2 space-y-8">
+          <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-10 space-y-8">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-bold text-slate-900">Project Description</h3>
+              <button onClick={onEdit} className="text-indigo-600 font-bold text-xs uppercase tracking-widest hover:underline">Update</button>
+            </div>
+            <p className="text-slate-500 leading-relaxed text-base">
+              {project.description || project.report || "No description provided for this project yet."}
+            </p>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-slate-50 p-6 rounded-2xl flex items-center gap-4 border border-slate-100">
+                <div className="p-3 bg-white rounded-xl shadow-sm"><Search size={20} className="text-indigo-600" /></div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Location</p>
+                  <p className="text-sm font-bold text-slate-900">{project.location || 'Remote / General'}</p>
+                </div>
+              </div>
+              <div className="bg-slate-50 p-6 rounded-2xl flex items-center gap-4 border border-slate-100">
+                <div className="p-3 bg-white rounded-xl shadow-sm"><BarChart3 size={20} className="text-indigo-600" /></div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Allocated Budget</p>
+                  <p className="text-sm font-bold text-slate-900">{project.budget || 'TBD'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-10 space-y-8">
+            <h3 className="text-xl font-bold text-slate-900">Current Status Highlights</h3>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-indigo-100 transition-all">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl"><Save size={20} /></div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">Phase: {project.phase}</p>
+                    <p className="text-xs text-slate-500">Current progress in the delivery cycle</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                   <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden">
+                      <div className="h-full bg-indigo-600 rounded-full" style={{ width: project.status === 'Concluído' ? '100%' : '65%' }} />
+                   </div>
+                   <CheckCircle2 size={20} className={project.status === 'Concluído' ? "text-emerald-500" : "text-slate-300"} />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-indigo-100 transition-all">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-amber-50 text-amber-600 rounded-xl"><Clock size={20} /></div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">Status: {project.status}</p>
+                    <p className="text-xs text-slate-500">Updated status of daily operations</p>
+                  </div>
+                </div>
+                <StatusBadge status={project.status} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column */}
+        <div className="space-y-8">
+          <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-8 space-y-6">
+            <h3 className="text-base font-bold text-slate-900">Project Team</h3>
+            <div className="space-y-4">
+               {[
+                 { name: 'Sarah Miller', role: 'Project Lead', initial: 'SM' },
+                 { name: 'David Chen', role: 'Structural Engineer', initial: 'DC' },
+                 { name: 'Lena Rodriguez', role: 'Compliance Officer', initial: 'LR' }
+               ].map(m => (
+                 <div key={m.name} className="flex items-center gap-3">
+                   <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-xs font-bold text-slate-600 border-2 border-white shadow-sm">{m.initial}</div>
+                   <div>
+                     <p className="text-sm font-bold text-slate-900">{m.name}</p>
+                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{m.role}</p>
+                   </div>
+                 </div>
+               ))}
+            </div>
+            <button className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 text-xs font-bold uppercase tracking-widest hover:border-indigo-300 hover:text-indigo-600 transition-all">
+              + Add Member
+            </button>
+          </div>
+
+          <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-8 space-y-6">
+            <h3 className="text-base font-bold text-slate-900">Resources</h3>
+            <div className="space-y-4">
+              <a href="#" className="flex items-center gap-3 text-slate-600 hover:text-indigo-600 transition-colors group">
+                <Calendar size={18} className="text-slate-400 group-hover:text-indigo-600" />
+                <span className="text-sm font-medium">Infrastructure Guidelines</span>
+              </a>
+              <a href="#" className="flex items-center gap-3 text-slate-600 hover:text-indigo-600 transition-colors group">
+                <Save size={18} className="text-slate-400 group-hover:text-indigo-600" />
+                <span className="text-sm font-medium">Shared Drive Folder</span>
+              </a>
+              <a href="#" className="flex items-center gap-3 text-slate-600 hover:text-indigo-600 transition-colors group">
+                <Clock size={18} className="text-slate-400 group-hover:text-indigo-600" />
+                <span className="text-sm font-medium">Archive Logs</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  const [view, setView] = useState<'dashboard' | 'details'>('dashboard');
   const [activeTab, setActiveTab] = useState('Visão Geral');
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -107,7 +286,6 @@ export default function App() {
   const [isSaving, setIsSaving] = useState(false);
 
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -134,7 +312,7 @@ export default function App() {
         id: String(i),
         type: row['TIPO PROJETO'] || '',
         initiative: row['INICIATIVA'] || '',
-        client: row['CLIENTE'] || '',
+        client: row['Cliente'] || row['CLIENTE'] || '',
         code: row['CODIGO PROJETO'] || `C${Math.floor(Math.random() * 90000)}`,
         name: row['PROJETO'] || 'Sem Nome',
         phase: row['FASE'] || 'Backlog',
@@ -144,6 +322,9 @@ export default function App() {
         farol: row['FAROL'] || 'No prazo',
         deliveryDate: formatToDDMMYYYY(row['ENTREGA'] || ''),
         replannedDate: formatToDDMMYYYY(row['REPLANEJAMENTO'] || ''),
+        description: row['DESCRIPTION'] || '',
+        location: row['LOCATION'] || '',
+        budget: row['BUDGET'] || '',
       }));
       setProjectsData(mapped);
     } catch (error) {
@@ -171,7 +352,10 @@ export default function App() {
         "REPORT": projectToSave.report,
         "FAROL": projectToSave.farol,
         "ENTREGA": projectToSave.deliveryDate,
-        "REPLANEJAMENTO": projectToSave.replannedDate
+        "REPLANEJAMENTO": projectToSave.replannedDate,
+        "DESCRIPTION": projectToSave.description,
+        "LOCATION": projectToSave.location,
+        "BUDGET": projectToSave.budget
       }
     };
 
@@ -263,7 +447,7 @@ export default function App() {
   return (
     <>
       <SignedOut>
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
           <SignIn routing="hash" />
         </div>
       </SignedOut>
@@ -279,8 +463,8 @@ export default function App() {
         </div>
         <nav className="flex-1 px-4 space-y-1.5">
           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest px-4 mb-3 mt-4">Navegação</p>
-          <SidebarItem icon={LayoutDashboard} label="Visão Geral" active={activeTab === 'Visão Geral'} onClick={() => setActiveTab('Visão Geral')} />
-          <SidebarItem icon={BarChart3} label="Análises" active={activeTab === 'Análises'} onClick={() => setActiveTab('Análises')} />
+          <SidebarItem icon={LayoutDashboard} label="Visão Geral" active={view === 'dashboard' && activeTab === 'Visão Geral'} onClick={() => { setView('dashboard'); setActiveTab('Visão Geral'); }} />
+          <SidebarItem icon={BarChart3} label="Análises" active={view === 'dashboard' && activeTab === 'Análises'} onClick={() => { setView('dashboard'); setActiveTab('Análises'); }} />
         </nav>
         <div className="p-6 border-t border-slate-100">
           <div
@@ -311,12 +495,18 @@ export default function App() {
             <button onClick={() => setIsSettingsOpen(true)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg">
               <Settings size={20} />
             </button>
-            <UserButton />
+            <UserButton afterSignOutUrl="/" />
           </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-8 space-y-8">
-          {activeTab === 'Visão Geral' ? (
+          {view === 'details' && selectedProject ? (
+            <ProjectDetailsView
+              project={selectedProject}
+              onBack={() => setView('dashboard')}
+              onEdit={() => { setEditingProject(selectedProject); setIsEditOpen(true); }}
+            />
+          ) : activeTab === 'Visão Geral' ? (
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 <motion.div
@@ -393,7 +583,7 @@ export default function App() {
                         >
                           <td
                             className="px-6 py-5 cursor-pointer group"
-                            onClick={() => { setSelectedProject(project); setIsDetailsOpen(true); }}
+                            onClick={() => { setSelectedProject(project); setView('details'); }}
                           >
                             <p className="text-base font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors leading-snug mb-0.5">{project.name}</p>
                             <p className="text-[11px] text-slate-500 font-medium">{project.code} <span className="mx-1 opacity-30">•</span> {project.client || project.initiative}</p>
@@ -403,9 +593,6 @@ export default function App() {
                           <td className="px-6 py-4"><FarolIndicator farol={project.farol} /></td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <button onClick={() => { setSelectedProject(project); setIsDetailsOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg">
-                                <Eye size={16} />
-                              </button>
                               <button onClick={() => { setEditingProject(project); setIsEditOpen(true); }} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
                                 <Pencil size={16} />
                               </button>
@@ -491,8 +678,22 @@ export default function App() {
                   </FormField>
 
                   <div className="md:col-span-2">
-                    <FormField label="Report">
-                      <textarea rows={3} placeholder="Breve resumo do status..." value={newProject.report} onChange={(e) => setNewProject({...newProject, report: e.target.value})} className={`${inputClass} resize-none`} />
+                    <FormField label="Project Description">
+                      <textarea rows={3} placeholder="Detailed project description..." value={newProject.description} onChange={(e) => setNewProject({...newProject, description: e.target.value})} className={`${inputClass} resize-none`} />
+                    </FormField>
+                  </div>
+
+                  <FormField label="Location">
+                    <input placeholder="Ex: North Region" value={newProject.location} onChange={(e) => setNewProject({...newProject, location: e.target.value})} className={inputClass} />
+                  </FormField>
+
+                  <FormField label="Allocated Budget">
+                    <input placeholder="Ex: $2.4M (USD)" value={newProject.budget} onChange={(e) => setNewProject({...newProject, budget: e.target.value})} className={inputClass} />
+                  </FormField>
+
+                  <div className="md:col-span-2">
+                    <FormField label="Report (Short Status)">
+                      <textarea rows={2} placeholder="Breve resumo do status..." value={newProject.report} onChange={(e) => setNewProject({...newProject, report: e.target.value})} className={`${inputClass} resize-none`} />
                     </FormField>
                   </div>
                 </div>
@@ -570,8 +771,22 @@ export default function App() {
                   </FormField>
 
                   <div className="md:col-span-2">
-                    <FormField label="Report">
-                      <textarea rows={3} value={editingProject.report} onChange={(e) => setEditingProject({...editingProject, report: e.target.value})} className={`${inputClass} resize-none`} />
+                    <FormField label="Project Description">
+                      <textarea rows={3} value={editingProject.description} onChange={(e) => setEditingProject({...editingProject, description: e.target.value})} className={`${inputClass} resize-none`} />
+                    </FormField>
+                  </div>
+
+                  <FormField label="Location">
+                    <input value={editingProject.location} onChange={(e) => setEditingProject({...editingProject, location: e.target.value})} className={inputClass} />
+                  </FormField>
+
+                  <FormField label="Allocated Budget">
+                    <input value={editingProject.budget} onChange={(e) => setEditingProject({...editingProject, budget: e.target.value})} className={inputClass} />
+                  </FormField>
+
+                  <div className="md:col-span-2">
+                    <FormField label="Report (Short Status)">
+                      <textarea rows={2} value={editingProject.report} onChange={(e) => setEditingProject({...editingProject, report: e.target.value})} className={`${inputClass} resize-none`} />
                     </FormField>
                   </div>
                 </div>
@@ -601,7 +816,7 @@ export default function App() {
                   listModalProjects.map((project) => (
                     <div
                       key={project.id}
-                      onClick={() => { setSelectedProject(project); setIsDetailsOpen(true); }}
+                      onClick={() => { setSelectedProject(project); setView('details'); setIsListModalOpen(false); }}
                       className="p-4 bg-slate-50 rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition-all cursor-pointer group"
                     >
                       <div className="flex justify-between items-center">
@@ -609,7 +824,6 @@ export default function App() {
                           <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{project.name}</p>
                           <p className="text-xs text-slate-500 font-mono">{project.code}</p>
                         </div>
-                        <Eye size={16} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
                       </div>
                     </div>
                   ))
@@ -621,38 +835,6 @@ export default function App() {
           </div>
         )}
 
-        {isDetailsOpen && selectedProject && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-8 relative">
-              <button onClick={() => setIsDetailsOpen(false)} className="absolute top-4 right-4 p-2 text-slate-400 hover:bg-slate-100 rounded-full"><X size={20}/></button>
-              <h2 className="text-2xl font-bold mb-1">{selectedProject.name}</h2>
-              <p className="text-sm text-slate-500 mb-6 font-mono">ID: {selectedProject.code}</p>
-              
-              <div className="space-y-4">
-                <div className="flex justify-between items-center p-4 bg-slate-50 rounded-xl">
-                  <span className="text-sm font-bold text-slate-500">Status Geral</span>
-                  <StatusBadge status={selectedProject.status} />
-                </div>
-                <div className="flex justify-between items-center p-4 bg-slate-50 rounded-xl">
-                  <span className="text-sm font-bold text-slate-500">Farol (Saúde)</span>
-                  <FarolIndicator farol={selectedProject.farol} />
-                </div>
-                <div className="flex justify-between items-center p-4 bg-slate-50 rounded-xl">
-                  <span className="text-sm font-bold text-slate-500">Iniciativa</span>
-                  <span className="text-sm text-slate-900">{selectedProject.initiative}</span>
-                </div>
-                <div className="flex justify-between items-center p-4 bg-slate-50 rounded-xl">
-                  <span className="text-sm font-bold text-slate-500">Cliente</span>
-                  <span className="text-sm text-slate-900">{selectedProject.client}</span>
-                </div>
-                <div className="p-4 bg-slate-50 rounded-xl">
-                  <span className="text-sm font-bold text-slate-500 block mb-2">Último Report</span>
-                  <p className="text-sm text-slate-700">{selectedProject.report || 'Sem report registado.'}</p>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
       </AnimatePresence>
       <NotificationsModal
         isOpen={isNotificationsOpen}
