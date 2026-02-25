@@ -5,6 +5,7 @@ import {
   AlertCircle, CheckCircle2, Clock, Filter, PauseCircle, ShieldAlert,
   Eye, Pencil, X, Save, Calendar, Trash2
 } from 'lucide-react';
+import { SignedIn, SignedOut, SignIn, UserButton } from '@clerk/clerk-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Project } from './types';
 import { AnalyticsModule } from './components/AnalyticsModule';
@@ -257,9 +258,16 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
-      {/* Barra Lateral */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col hidden lg:flex">
+    <>
+      <SignedOut>
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+          <SignIn routing="hash" />
+        </div>
+      </SignedOut>
+      <SignedIn>
+        <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
+          {/* Barra Lateral */}
+          <aside className="w-64 bg-white border-r border-slate-200 flex flex-col hidden lg:flex">
         <div className="p-8 flex items-center gap-3">
           <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
             <LayoutDashboard size={24} className="text-white" />
@@ -300,6 +308,7 @@ export default function App() {
             <button onClick={() => setIsSettingsOpen(true)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg">
               <Settings size={20} />
             </button>
+            <UserButton />
           </div>
         </header>
 
@@ -625,8 +634,10 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
-      {isNotificationsOpen && <NotificationsModal onClose={() => setIsNotificationsOpen(false)} />}
-      {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
-    </div>
+          {isNotificationsOpen && <NotificationsModal onClose={() => setIsNotificationsOpen(false)} />}
+          {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
+        </div>
+      </SignedIn>
+    </>
   );
 }
