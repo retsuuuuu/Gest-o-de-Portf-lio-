@@ -112,7 +112,7 @@ export default function App() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newProject, setNewProject] = useState<Partial<Project>>({
-    name: '', initiative: '', phase: 'Backlog', status: 'Backlog', farol: 'No prazo', baseline: '', report: '', type: 'Estratégico'
+    name: '', initiative: '', client: '', phase: 'Backlog', status: 'Backlog', farol: 'No prazo', baseline: '', report: '', type: 'Estratégico'
   });
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -134,6 +134,7 @@ export default function App() {
         id: String(i),
         type: row['TIPO PROJETO'] || '',
         initiative: row['INICIATIVA'] || '',
+        client: row['CLIENTE'] || '',
         code: row['CODIGO PROJETO'] || `C${Math.floor(Math.random() * 90000)}`,
         name: row['PROJETO'] || 'Sem Nome',
         phase: row['FASE'] || 'Backlog',
@@ -161,6 +162,7 @@ export default function App() {
       payload: {
         "TIPO PROJETO": projectToSave.type,
         "INICIATIVA": projectToSave.initiative,
+        "CLIENTE": projectToSave.client,
         "CODIGO PROJETO": code,
         "PROJETO": projectToSave.name,
         "FASE": projectToSave.phase,
@@ -190,7 +192,7 @@ export default function App() {
         const newProj: Project = { ...projectToSave, code, id: Date.now().toString() } as Project;
         setProjectsData(prev => [...prev, newProj]);
         setIsCreateOpen(false);
-        setNewProject({ name: '', initiative: '', phase: 'Backlog', status: 'Backlog', farol: 'No prazo', baseline: '', report: '', type: 'Estratégico' });
+        setNewProject({ name: '', initiative: '', client: '', phase: 'Backlog', status: 'Backlog', farol: 'No prazo', baseline: '', report: '', type: 'Estratégico' });
       }
     } catch (error) {
       console.error("Erro crítico de submissão:", error);
@@ -240,6 +242,7 @@ export default function App() {
   const filteredProjects = projectsData.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.initiative.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.code.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -393,7 +396,7 @@ export default function App() {
                             onClick={() => { setSelectedProject(project); setIsDetailsOpen(true); }}
                           >
                             <p className="text-base font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors leading-snug mb-0.5">{project.name}</p>
-                            <p className="text-[11px] text-slate-500 font-medium">{project.code} <span className="mx-1 opacity-30">•</span> {project.initiative}</p>
+                            <p className="text-[11px] text-slate-500 font-medium">{project.code} <span className="mx-1 opacity-30">•</span> {project.client || project.initiative}</p>
                           </td>
                           <td className="px-6 py-4"><span className="text-sm text-slate-600">{project.phase}</span></td>
                           <td className="px-6 py-4"><StatusBadge status={project.status} /></td>
@@ -443,11 +446,13 @@ export default function App() {
                     </FormField>
                   </div>
 
-                  <div className="md:col-span-2">
-                    <FormField label="Iniciativa / Cliente">
-                      <input required placeholder="Iniciativa" value={newProject.initiative} onChange={(e) => setNewProject({...newProject, initiative: e.target.value})} className={inputClass} />
-                    </FormField>
-                  </div>
+                  <FormField label="Iniciativa">
+                    <input required placeholder="Iniciativa" value={newProject.initiative} onChange={(e) => setNewProject({...newProject, initiative: e.target.value})} className={inputClass} />
+                  </FormField>
+
+                  <FormField label="Cliente">
+                    <input required placeholder="Cliente" value={newProject.client} onChange={(e) => setNewProject({...newProject, client: e.target.value})} className={inputClass} />
+                  </FormField>
 
                   <div className="md:col-span-2">
                     <FormField label="Código do Projeto">
@@ -520,11 +525,13 @@ export default function App() {
                     </FormField>
                   </div>
 
-                  <div className="md:col-span-2">
-                    <FormField label="Iniciativa / Cliente">
-                      <input required value={editingProject.initiative} onChange={(e) => setEditingProject({...editingProject, initiative: e.target.value})} className={inputClass} />
-                    </FormField>
-                  </div>
+                  <FormField label="Iniciativa">
+                    <input required value={editingProject.initiative} onChange={(e) => setEditingProject({...editingProject, initiative: e.target.value})} className={inputClass} />
+                  </FormField>
+
+                  <FormField label="Cliente">
+                    <input required value={editingProject.client} onChange={(e) => setEditingProject({...editingProject, client: e.target.value})} className={inputClass} />
+                  </FormField>
 
                   <div className="md:col-span-2">
                     <FormField label="Código do Projeto">
@@ -633,6 +640,10 @@ export default function App() {
                 <div className="flex justify-between items-center p-4 bg-slate-50 rounded-xl">
                   <span className="text-sm font-bold text-slate-500">Iniciativa</span>
                   <span className="text-sm text-slate-900">{selectedProject.initiative}</span>
+                </div>
+                <div className="flex justify-between items-center p-4 bg-slate-50 rounded-xl">
+                  <span className="text-sm font-bold text-slate-500">Cliente</span>
+                  <span className="text-sm text-slate-900">{selectedProject.client}</span>
                 </div>
                 <div className="p-4 bg-slate-50 rounded-xl">
                   <span className="text-sm font-bold text-slate-500 block mb-2">Último Report</span>

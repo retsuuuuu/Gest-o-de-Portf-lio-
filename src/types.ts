@@ -6,6 +6,7 @@ export interface Project {
   id: string;
   type: string;
   initiative: string;
+  client: string;
   code: string;
   name: string;
   phase: string;
