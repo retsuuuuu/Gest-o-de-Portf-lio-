@@ -31,7 +31,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </div>
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-slate-900">Algo correu mal</h2>
+              <h2 className="text-2xl font-bold text-slate-900">Algo deu errado</h2>
               <p className="text-slate-500">A aplicação encontrou um erro inesperado. Por favor, tente recarregar a página.</p>
             </div>
             {this.state.error && (

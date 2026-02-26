@@ -139,8 +139,8 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, onBack, 
 
       {/* Main Info Card */}
       <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-10">
-          <div className="flex justify-between items-start mb-8">
+        <div className="p-5 sm:p-10">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-6 sm:gap-0 mb-8">
             <div className="space-y-4">
               <div className="flex gap-2">
                 <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-bold uppercase tracking-widest rounded-full">{project.type}</span>
@@ -149,23 +149,23 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, onBack, 
                   Relatório Ativo
                 </div>
               </div>
-              <h1 className="text-5xl font-bold text-slate-900 tracking-tight leading-none">{project.name}</h1>
+              <h1 className="text-2xl sm:text-5xl font-bold text-slate-900 tracking-tight leading-tight sm:leading-none">{project.name}</h1>
             </div>
-            <button onClick={onEdit} className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
+            <button onClick={onEdit} className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
               <Pencil size={18} /> Editar Projeto
             </button>
           </div>
 
-          <div className="grid grid-cols-3 border-t border-slate-100 pt-8 mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 border-t border-slate-100 pt-8 mt-4 gap-6 sm:gap-0">
             <div className="space-y-1">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Código do Projeto</p>
               <p className="text-xl font-bold text-slate-900">{project.code}</p>
             </div>
-            <div className="space-y-1 border-x border-slate-100 px-10">
+            <div className="space-y-1 sm:border-x sm:border-slate-100 sm:px-10">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Data Base (Baseline)</p>
               <p className="text-xl font-bold text-slate-900">{project.baseline || 'Não definida'}</p>
             </div>
-            <div className="space-y-1 pl-10">
+            <div className="space-y-1 sm:pl-10">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Data de Replanejamento</p>
               <p className="text-xl font-bold text-slate-900">{project.replannedDate || 'Sem replanejamento'}</p>
             </div>
@@ -176,7 +176,7 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, onBack, 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column */}
         <div className="lg:col-span-2 space-y-8">
-          <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-10 space-y-8">
+          <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-5 sm:p-10 space-y-8">
             <div className="flex justify-between items-center">
               <h3 className="text-xl font-bold text-slate-900">Descrição do Projeto</h3>
               <button onClick={onEdit} className="text-indigo-600 font-bold text-xs uppercase tracking-widest hover:underline">Atualizar</button>

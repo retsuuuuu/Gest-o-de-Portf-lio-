@@ -119,7 +119,7 @@ export default function App() {
     // Regra 2: Data Base (Baseline) menor que hoje e não concluído -> Atrasado
     if (next.status !== 'Concluído' && next.baseline && next.baseline.length === 10) {
       if (isPastDate(next.baseline)) {
-        next.farol = 'Atrasado (TradeUp)';
+        next.farol = 'Atrasado';
       }
     }
 
@@ -147,7 +147,7 @@ export default function App() {
     }
   });
 
-  const [isLoading, setIsLoading] = useState(projectsData.length === 0);
+  const [isLoading, setIsLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -442,15 +442,15 @@ export default function App() {
   return (
     <>
       <SignedOut>
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-          <SignIn routing="hash" />
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+          <SignIn />
         </div>
       </SignedOut>
       <SignedIn>
         <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
           {/* Barra Lateral */}
           <aside className="w-64 bg-white border-r border-slate-200 flex flex-col hidden lg:flex">
-        <div className="p-8 flex items-center gap-3">
+        <div className="p-4 sm:p-8 flex items-center gap-3">
           <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
             <LayoutDashboard size={24} className="text-white" />
           </div>
@@ -476,7 +476,7 @@ export default function App() {
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="h-16 bg-white border-bottom border-slate-200 flex items-center justify-between px-8 z-10">
+        <header className="h-16 bg-white border-bottom border-slate-200 flex items-center justify-between px-4 sm:px-8 z-10">
           <div className="flex items-center flex-1 max-w-md">
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -494,7 +494,7 @@ export default function App() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-8 space-y-8">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-8">
           {view === 'detalhes' && selectedProject ? (
             <Suspense fallback={<div className="flex items-center justify-center p-20"><div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>}>
               <ProjectDetailsView
@@ -508,7 +508,7 @@ export default function App() {
             </Suspense>
           ) : activeTab === 'Visão Geral' ? (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                 <motion.div
                   animate={stats.atrasados > 0 ? { scale: [1, 1.02, 1], boxShadow: ["0px 0px 0px rgba(244, 63, 94, 0)", "0px 0px 20px rgba(244, 63, 94, 0.3)", "0px 0px 0px rgba(244, 63, 94, 0)"] } : {}}
                   transition={{ duration: 2, repeat: Infinity }}
@@ -620,7 +620,7 @@ export default function App() {
       <AnimatePresence>
         {isCreateOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-6 my-8">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-4 sm:p-6 my-8">
               <div className="flex justify-between items-center mb-8">
                 <h2 className="text-2xl font-bold text-slate-900">Novo Projeto</h2>
                 <button onClick={() => setIsCreateOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors p-2 hover:bg-slate-50 rounded-full">
@@ -741,7 +741,7 @@ export default function App() {
 
         {isEditOpen && editingProject && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-6 my-8">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-4 sm:p-6 my-8">
               <div className="flex justify-between items-center mb-8">
                 <h2 className="text-2xl font-bold text-slate-900">Editar Projeto</h2>
                 <button onClick={() => setIsEditOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors p-2 hover:bg-slate-50 rounded-full">
