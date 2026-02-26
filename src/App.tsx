@@ -29,20 +29,20 @@ const StatCard = React.memo(({ label, value, icon: Icon, color, onClick }: { lab
   <div onClick={onClick} className={`bg-white p-7 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full ${onClick ? 'cursor-pointer hover:border-indigo-200' : ''}`}>
     <div className="flex justify-between items-start mb-4">
       <div className={`p-2.5 rounded-xl ${color} shadow-lg shadow-current/10`}>
-        <Icon size={22} className="text-white" />
+        <Icon size={24} className="text-white" />
       </div>
     </div>
     <div className="flex-1 flex flex-col justify-between">
-      <h3 className="text-slate-500 text-[11px] font-bold uppercase tracking-wider mb-2 min-h-[32px] flex items-center leading-tight">{label}</h3>
-      <p className="text-3xl font-bold text-slate-900 tracking-tight">{value}</p>
+      <h3 className="text-slate-500 text-[13px] font-bold uppercase tracking-wider mb-2 min-h-[32px] flex items-center leading-tight">{label}</h3>
+      <p className="text-5xl font-extrabold text-slate-900 tracking-tight">{value}</p>
     </div>
   </div>
 ));
 
 const FormField = React.memo(({ label, children }: { label: string, children: React.ReactNode }) => (
   <div className="flex flex-col gap-2">
-    <div className="min-h-[20px] flex items-end">
-      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider leading-none">{label}</label>
+    <div className="min-h-[24px] flex items-end">
+      <label className="text-[13px] font-bold text-slate-600 uppercase tracking-wider leading-none">{label}</label>
     </div>
     {children}
   </div>
@@ -147,6 +147,9 @@ export default function App() {
   const [view, setView] = useState<'dashboard' | 'detalhes'>('dashboard');
   const [activeTab, setActiveTab] = useState('Visão Geral');
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('Todos');
+  const [farolFilter, setFarolFilter] = useState('Todos');
+  const [clientFilter, setClientFilter] = useState('Todos');
   
   const [projectsData, setProjectsData] = useState<Project[]>(() => {
     try {
@@ -393,16 +396,37 @@ export default function App() {
     p.code.toLowerCase().includes(searchQuery.toLowerCase())
   ), [projectsData, searchQuery]);
 
-  const stats = useMemo(() => {
-    if (!projectsData.length) return { atrasados: 0, emAndamento: 0, pausados: 0, impedimento: 0, concluidos: 0 };
-    return {
-      atrasados: projectsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')).length,
-      emAndamento: projectsData.filter(p => (p.status || '').toLowerCase() === 'em andamento').length,
-      pausados: projectsData.filter(p => (p.status || '').toLowerCase() === 'pausado').length,
-      impedimento: projectsData.filter(p => (p.status || '').toLowerCase() === 'impedimento').length,
-      concluidos: projectsData.filter(p => (p.status || '').toLowerCase() === 'concluído').length,
-    };
+  const uniqueClients = useMemo(() => {
+    const clients = new Set(projectsData.map(p => p.client).filter(Boolean));
+    return ['Todos', ...Array.from(clients).sort()];
   }, [projectsData]);
+
+  const filteredData = useMemo(() => {
+    return projectsData.filter(p => {
+      const matchesSearch = !searchQuery ||
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.initiative.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.code.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesStatus = statusFilter === 'Todos' || p.status === statusFilter;
+      const matchesFarol = farolFilter === 'Todos' || p.farol === farolFilter;
+      const matchesClient = clientFilter === 'Todos' || p.client === clientFilter;
+
+      return matchesSearch && matchesStatus && matchesFarol && matchesClient;
+    });
+  }, [projectsData, searchQuery, statusFilter, farolFilter, clientFilter]);
+
+  const stats = useMemo(() => {
+    if (!filteredData.length) return { atrasados: 0, emAndamento: 0, pausados: 0, impedimento: 0, concluidos: 0 };
+    return {
+      atrasados: filteredData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')).length,
+      emAndamento: filteredData.filter(p => (p.status || '').toLowerCase() === 'em andamento').length,
+      pausados: filteredData.filter(p => (p.status || '').toLowerCase() === 'pausado').length,
+      impedimento: filteredData.filter(p => (p.status || '').toLowerCase() === 'impedimento').length,
+      concluidos: filteredData.filter(p => (p.status || '').toLowerCase() === 'concluído').length,
+    };
+  }, [filteredData]);
 
   const handleOpenListModal = useCallback((title: string, projects: Project[]) => {
     setListModalTitle(title);
@@ -462,12 +486,12 @@ export default function App() {
         </nav>
         <div className="p-6 border-t border-slate-100">
           <div
-            onClick={() => handleOpenListModal("Todos os Projetos", projectsData)}
+            onClick={() => handleOpenListModal("Projetos Filtrados", filteredData)}
             className="bg-indigo-600 rounded-2xl p-6 text-white relative overflow-hidden shadow-lg shadow-indigo-200 cursor-pointer hover:bg-indigo-700 transition-colors group"
           >
             <div className="relative z-10">
               <h4 className="text-sm font-bold opacity-80 mb-1">Status Geral</h4>
-              <p className="text-2xl font-bold mb-4 group-hover:scale-110 transition-transform origin-left">{projectsData.length} Projetos</p>
+              <p className="text-2xl font-bold mb-4 group-hover:scale-110 transition-transform origin-left">{filteredData.length} Projetos</p>
             </div>
             <div className="absolute -right-4 -bottom-4 opacity-20 transform rotate-12 group-hover:rotate-0 transition-transform duration-500"><BarChart3 size={120} /></div>
           </div>
@@ -520,19 +544,42 @@ export default function App() {
                   transition={{ duration: 2, repeat: Infinity }}
                   className={`h-full rounded-2xl transition-all ${stats.atrasados > 0 ? 'ring-2 ring-rose-500 ring-offset-2' : ''}`}
                 >
-                  <StatCard label="PROJETOS ATRASADOS" value={stats.atrasados} icon={AlertCircle} color="bg-rose-500" onClick={() => handleOpenListModal("Projetos Atrasados", projectsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')))} />
+                  <StatCard label="PROJETOS ATRASADOS" value={stats.atrasados} icon={AlertCircle} color="bg-rose-500" onClick={() => handleOpenListModal("Projetos Atrasados", filteredData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')))} />
                 </motion.div>
-                <StatCard label="PROJETOS EM ANDAMENTO" value={stats.emAndamento} icon={Clock} color="bg-blue-500" onClick={() => handleOpenListModal("Projetos em Andamento", projectsData.filter(p => (p.status || '').toLowerCase() === 'em andamento'))} />
-                <StatCard label="PROJETOS PAUSADOS" value={stats.pausados} icon={PauseCircle} color="bg-amber-500" onClick={() => handleOpenListModal("Projetos Pausados", projectsData.filter(p => (p.status || '').toLowerCase() === 'pausado'))} />
-                <StatCard label="PROJETOS EM IMPEDIMENTO" value={stats.impedimento} icon={ShieldAlert} color="bg-slate-500" onClick={() => handleOpenListModal("Projetos em Impedimento", projectsData.filter(p => (p.status || '').toLowerCase() === 'impedimento'))} />
-                <StatCard label="PROJETOS CONCLUÍDOS" value={stats.concluidos} icon={CheckCircle2} color="bg-emerald-500" onClick={() => handleOpenListModal("Projetos Concluídos", projectsData.filter(p => (p.status || '').toLowerCase() === 'concluído'))} />
+                <StatCard label="PROJETOS EM ANDAMENTO" value={stats.emAndamento} icon={Clock} color="bg-blue-500" onClick={() => handleOpenListModal("Projetos em Andamento", filteredData.filter(p => (p.status || '').toLowerCase() === 'em andamento'))} />
+                <StatCard label="PROJETOS PAUSADOS" value={stats.pausados} icon={PauseCircle} color="bg-amber-500" onClick={() => handleOpenListModal("Projetos Pausados", filteredData.filter(p => (p.status || '').toLowerCase() === 'pausado'))} />
+                <StatCard label="PROJETOS EM IMPEDIMENTO" value={stats.impedimento} icon={ShieldAlert} color="bg-slate-500" onClick={() => handleOpenListModal("Projetos em Impedimento", filteredData.filter(p => (p.status || '').toLowerCase() === 'impedimento'))} />
+                <StatCard label="PROJETOS CONCLUÍDOS" value={stats.concluidos} icon={CheckCircle2} color="bg-emerald-500" onClick={() => handleOpenListModal("Projetos Concluídos", filteredData.filter(p => (p.status || '').toLowerCase() === 'concluído'))} />
+              </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+                  <div className="space-y-3">
+                    <label className="text-[13px] font-bold text-slate-500 uppercase tracking-widest">Status</label>
+                    <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-base font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none">
+                    <option value="Todos">Todos os Status</option>
+                    {ALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                  <div className="space-y-3">
+                    <label className="text-[13px] font-bold text-slate-500 uppercase tracking-widest">Farol</label>
+                    <select value={farolFilter} onChange={(e) => setFarolFilter(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-base font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none">
+                    <option value="Todos">Todos os Faróis</option>
+                    {ALL_FAROL.map(f => <option key={f} value={f}>{f}</option>)}
+                  </select>
+                </div>
+                  <div className="space-y-3">
+                    <label className="text-[13px] font-bold text-slate-500 uppercase tracking-widest">Cliente</label>
+                    <select value={clientFilter} onChange={(e) => setClientFilter(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-base font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none">
+                    {uniqueClients.map(c => <option key={c} value={c}>{c === 'Todos' ? 'Todos os Clientes' : c}</option>)}
+                  </select>
+                </div>
               </div>
 
               <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                  <div className="p-8 border-b border-slate-100 flex items-center justify-between">
                   <div>
-                    <h2 className="text-lg font-bold text-slate-900">Gestão de Projetos</h2>
-                    <p className="text-sm text-slate-500">Acompanhe e gerencie suas iniciativas</p>
+                      <h2 className="text-2xl font-bold text-slate-900">Gestão de Projetos</h2>
+                      <p className="text-base text-slate-500 font-medium">Acompanhe e gerencie suas iniciativas</p>
                   </div>
                   <button onClick={() => setIsCreateOpen(true)} className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors">
                     <Plus size={16} /> Novo Projeto
@@ -541,24 +588,24 @@ export default function App() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-slate-50/50 border-b border-slate-100 text-[11px] uppercase tracking-wider text-slate-400">
-                        <th className="px-6 py-5 font-bold">Projeto</th>
-                        <th className="px-6 py-5 font-bold">Fase</th>
-                        <th className="px-6 py-5 font-bold">Status</th>
-                        <th className="px-6 py-5 font-bold">Farol</th>
-                        <th className="px-6 py-5 font-bold text-right">Ações</th>
+                      <tr className="bg-slate-50/50 border-b border-slate-100 text-[13px] uppercase tracking-wider text-slate-500">
+                        <th className="px-8 py-6 font-bold">Projeto</th>
+                        <th className="px-8 py-6 font-bold">Fase</th>
+                        <th className="px-8 py-6 font-bold">Status</th>
+                        <th className="px-8 py-6 font-bold">Farol</th>
+                        <th className="px-8 py-6 font-bold text-right">Ações</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {filteredProjects.map((project) => (
+                      {filteredData.map((project) => (
                         <tr key={project.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-6 py-5 cursor-pointer group" onClick={() => { setSelectedProject(project); setView('detalhes'); }}>
-                            <p className="text-base font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors leading-snug mb-0.5">{project.name}</p>
-                            <p className="text-[11px] text-slate-500 font-medium">{project.code} <span className="mx-1 opacity-30">•</span> {project.client || project.initiative}</p>
+                          <td className="px-8 py-6 cursor-pointer group" onClick={() => { setSelectedProject(project); setView('detalhes'); }}>
+                            <p className="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight mb-1">{project.name}</p>
+                            <p className="text-[13px] text-slate-500 font-semibold uppercase tracking-wide">{project.code} <span className="mx-2 opacity-30">•</span> {project.client || project.initiative}</p>
                           </td>
-                          <td className="px-6 py-4 text-sm text-slate-600">{project.phase}</td>
-                          <td className="px-6 py-4"><StatusBadge status={project.status} /></td>
-                          <td className="px-6 py-4"><FarolIndicator farol={project.farol} /></td>
+                          <td className="px-8 py-6 text-base font-medium text-slate-600">{project.phase}</td>
+                          <td className="px-8 py-6"><StatusBadge status={project.status} /></td>
+                          <td className="px-8 py-6"><FarolIndicator farol={project.farol} /></td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
                               <button onClick={() => { setEditingProject(project); setIsEditOpen(true); }} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"><Pencil size={16} /></button>
@@ -576,7 +623,7 @@ export default function App() {
             </>
           ) : (
             <Suspense fallback={<div className="flex-1 flex items-center justify-center min-h-[400px]"><div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>}>
-              <AnalyticsModule projectsData={projectsData} onSegmentClick={handleOpenListModal} />
+              <AnalyticsModule projectsData={filteredData} onSegmentClick={handleOpenListModal} />
             </Suspense>
           )}
         </div>
