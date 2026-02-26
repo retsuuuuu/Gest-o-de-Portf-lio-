@@ -16,11 +16,27 @@ const StatusBadge = React.memo(({ status }: { status: string }) => {
       default: return 'bg-slate-50 text-slate-600 border-slate-100';
     }
   };
-  return <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${getStyles()}`}>{status || 'N/A'}</span>;
+  return <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${getStyles()}`}>{status || 'N/D'}</span>;
 });
 
 const TeamMemberSelector = React.memo(({ label, role, currentMember, onSelect, availableMembers = [] }: { label: string, role: string, currentMember?: string, onSelect: (name: string) => void, availableMembers?: string[] }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // We use this local effect to detect when the member has changed, implying update finished
+  useEffect(() => {
+    setIsUpdating(false);
+  }, [currentMember]);
+
+  const handleSelect = (name: string) => {
+    if (name === currentMember) {
+      setIsOpen(false);
+      return;
+    }
+    setIsUpdating(true);
+    onSelect(name);
+    setIsOpen(false);
+  };
 
   return (
     <div className="relative group">
@@ -28,16 +44,24 @@ const TeamMemberSelector = React.memo(({ label, role, currentMember, onSelect, a
         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</label>
       </div>
       <div
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-indigo-200 cursor-pointer transition-all"
+        onClick={() => !isUpdating && setIsOpen(!isOpen)}
+        className={`flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 transition-all ${isUpdating ? 'opacity-70 cursor-wait' : 'hover:border-indigo-200 cursor-pointer'}`}
       >
-        <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[10px] font-bold text-slate-400 border border-slate-100 shadow-sm">
-          {currentMember ? currentMember.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?'}
+        <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[10px] font-bold text-slate-400 border border-slate-100 shadow-sm relative overflow-hidden">
+          {isUpdating ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/80">
+              <div className="w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : (
+            currentMember ? currentMember.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?'
+          )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-slate-900 truncate">{currentMember || 'Not assigned'}</p>
+          <p className="text-sm font-bold text-slate-900 truncate">
+            {isUpdating ? 'Atualizando...' : (currentMember || 'Não atribuído')}
+          </p>
         </div>
-        <Plus size={14} className={`text-slate-400 transition-transform ${isOpen ? 'rotate-45' : ''}`} />
+        {!isUpdating && <Plus size={14} className={`text-slate-400 transition-transform ${isOpen ? 'rotate-45' : ''}`} />}
       </div>
 
       <AnimatePresence>
@@ -52,7 +76,7 @@ const TeamMemberSelector = React.memo(({ label, role, currentMember, onSelect, a
               availableMembers.map(name => (
                 <div
                   key={name}
-                  onClick={() => { onSelect(name); setIsOpen(false); }}
+                  onClick={() => handleSelect(name)}
                   className="px-4 py-2 text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer transition-colors"
                 >
                   {name}
@@ -95,7 +119,7 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, onBack, 
             <div className="h-6 w-px bg-slate-200 mx-2" />
             <div className="flex items-center gap-2">
               <CheckCircle2 size={20} className="text-indigo-600" />
-              <h2 className="font-bold text-slate-900">Project Details</h2>
+              <h2 className="font-bold text-slate-900">Detalhes do Projeto</h2>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -107,7 +131,7 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, onBack, 
         <nav className="flex text-[11px] font-bold uppercase tracking-widest text-slate-400 gap-2 items-center">
           <span>Workspace</span>
           <span className="text-slate-300">›</span>
-          <span>Active Projects</span>
+          <span>Projetos Ativos</span>
           <span className="text-slate-300">›</span>
           <span className="text-indigo-600">{project.initiative}</span>
         </nav>
@@ -128,22 +152,22 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, onBack, 
               <h1 className="text-5xl font-bold text-slate-900 tracking-tight leading-none">{project.name}</h1>
             </div>
             <button onClick={onEdit} className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
-              <Pencil size={18} /> Edit Project
+              <Pencil size={18} /> Editar Projeto
             </button>
           </div>
 
           <div className="grid grid-cols-3 border-t border-slate-100 pt-8 mt-4">
             <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Project Code</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Código do Projeto</p>
               <p className="text-xl font-bold text-slate-900">{project.code}</p>
             </div>
             <div className="space-y-1 border-x border-slate-100 px-10">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Baseline Date</p>
-              <p className="text-xl font-bold text-slate-900">{project.baseline || 'Not set'}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Data de Baseline</p>
+              <p className="text-xl font-bold text-slate-900">{project.baseline || 'Não definida'}</p>
             </div>
             <div className="space-y-1 pl-10">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Replanning Date</p>
-              <p className="text-xl font-bold text-slate-900">{project.replannedDate || 'No replanning'}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Data de Replanejamento</p>
+              <p className="text-xl font-bold text-slate-900">{project.replannedDate || 'Sem replanejamento'}</p>
             </div>
           </div>
         </div>
@@ -154,40 +178,23 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, onBack, 
         <div className="lg:col-span-2 space-y-8">
           <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-10 space-y-8">
             <div className="flex justify-between items-center">
-              <h3 className="text-xl font-bold text-slate-900">Project Description</h3>
-              <button onClick={onEdit} className="text-indigo-600 font-bold text-xs uppercase tracking-widest hover:underline">Update</button>
+              <h3 className="text-xl font-bold text-slate-900">Descrição do Projeto</h3>
+              <button onClick={onEdit} className="text-indigo-600 font-bold text-xs uppercase tracking-widest hover:underline">Atualizar</button>
             </div>
             <p className="text-slate-500 leading-relaxed text-base">
-              {project.description || project.report || "No description provided for this project yet."}
+              {project.description || project.report || "Nenhuma descrição fornecida para este projeto ainda."}
             </p>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-50 p-6 rounded-2xl flex items-center gap-4 border border-slate-100">
-                <div className="p-3 bg-white rounded-xl shadow-sm"><Search size={20} className="text-indigo-600" /></div>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Location</p>
-                  <p className="text-sm font-bold text-slate-900">{project.location || 'Remote / General'}</p>
-                </div>
-              </div>
-              <div className="bg-slate-50 p-6 rounded-2xl flex items-center gap-4 border border-slate-100">
-                <div className="p-3 bg-white rounded-xl shadow-sm"><CheckCircle2 size={20} className="text-indigo-600" /></div>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Allocated Budget</p>
-                  <p className="text-sm font-bold text-slate-900">{project.budget || 'TBD'}</p>
-                </div>
-              </div>
-            </div>
           </div>
 
           <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-10 space-y-8">
-            <h3 className="text-xl font-bold text-slate-900">Current Status Highlights</h3>
+            <h3 className="text-xl font-bold text-slate-900">Destaques do Status Atual</h3>
             <div className="space-y-6">
               <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-indigo-100 transition-all">
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl"><Save size={20} /></div>
                   <div>
-                    <p className="text-sm font-bold text-slate-900">Phase: {project.phase}</p>
-                    <p className="text-xs text-slate-500">Current progress in the delivery cycle</p>
+                    <p className="text-sm font-bold text-slate-900">Fase: {project.phase}</p>
+                    <p className="text-xs text-slate-500">Progresso atual no ciclo de entrega</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -203,7 +210,7 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, onBack, 
                   <div className="p-3 bg-amber-50 text-amber-600 rounded-xl"><Clock size={20} /></div>
                   <div>
                     <p className="text-sm font-bold text-slate-900">Status: {project.status}</p>
-                    <p className="text-xs text-slate-500">Updated status of daily operations</p>
+                    <p className="text-xs text-slate-500">Status atualizado das operações diárias</p>
                   </div>
                 </div>
                 <StatusBadge status={project.status} />
@@ -216,13 +223,13 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, onBack, 
         <div className="space-y-8">
           <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-8 space-y-6">
             <div className="flex justify-between items-center">
-              <h3 className="text-base font-bold text-slate-900">Project Team</h3>
+              <h3 className="text-base font-bold text-slate-900">Equipe do Projeto</h3>
               <button
                 onClick={() => setIsAddingMember(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-100 transition-colors"
               >
                 <Plus size={12} />
-                Adicionar Novo
+                Adicionar novo
               </button>
             </div>
             <div className="space-y-6">
@@ -256,24 +263,6 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, onBack, 
                />
             </div>
           </div>
-
-          <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-8 space-y-6">
-            <h3 className="text-base font-bold text-slate-900">Resources</h3>
-            <div className="space-y-4">
-              <a href="#" className="flex items-center gap-3 text-slate-600 hover:text-indigo-600 transition-colors group">
-                <Calendar size={18} className="text-slate-400 group-hover:text-indigo-600" />
-                <span className="text-sm font-medium">Infrastructure Guidelines</span>
-              </a>
-              <a href="#" className="flex items-center gap-3 text-slate-600 hover:text-indigo-600 transition-colors group">
-                <Save size={18} className="text-slate-400 group-hover:text-indigo-600" />
-                <span className="text-sm font-medium">Shared Drive Folder</span>
-              </a>
-              <a href="#" className="flex items-center gap-3 text-slate-600 hover:text-indigo-600 transition-colors group">
-                <Clock size={18} className="text-slate-400 group-hover:text-indigo-600" />
-                <span className="text-sm font-medium">Archive Logs</span>
-              </a>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -287,7 +276,7 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, onBack, 
               className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6"
             >
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-slate-900">Registar Profissional</h2>
+                <h2 className="text-xl font-bold text-slate-900">Registrar profissional</h2>
                 <button onClick={() => setIsAddingMember(false)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-50 rounded-full">
                   <ArrowLeft size={20} className="rotate-90" />
                 </button>
@@ -329,7 +318,7 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, onBack, 
                     type="submit"
                     className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"
                   >
-                    Registar
+                    Registrar
                   </button>
                 </div>
               </form>

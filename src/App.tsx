@@ -102,7 +102,7 @@ const FarolIndicator = React.memo(({ farol }: { farol: string }) => {
 
 export default function App() {
   const { user } = useUser();
-  const [view, setView] = useState<'dashboard' | 'details'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'detalhes'>('dashboard');
   const [activeTab, setActiveTab] = useState('Visão Geral');
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -173,8 +173,6 @@ export default function App() {
         deliveryDate: formatToDDMMYYYY(row['ENTREGA'] || ''),
         replannedDate: formatToDDMMYYYY(row['REPLANEJAMENTO'] || ''),
         description: row['DESCRIPTION'] || '',
-        location: row['LOCATION'] || '',
-        budget: row['BUDGET'] || '',
         po: row['PO'] || row['P.O'] || '',
         ux: row['UX'] || '',
         qa: row['QA'] || '',
@@ -238,9 +236,7 @@ export default function App() {
         "FAROL": projectToSave.farol,
         "ENTREGA": projectToSave.deliveryDate,
         "REPLANEJAMENTO": projectToSave.replannedDate,
-        "DESCRIPTION": projectToSave.description,
-        "LOCATION": projectToSave.location,
-        "BUDGET": projectToSave.budget
+        "DESCRIPTION": projectToSave.description
       }
     };
 
@@ -335,14 +331,14 @@ export default function App() {
         return newTeam;
       });
     } catch (error) {
-      console.error("Erro ao registar membro:", error);
+      console.error("Erro ao registrar membro:", error);
     } finally {
       setIsSaving(false);
     }
   }, []);
 
   const handleDeleteProject = useCallback(async (project: Project) => {
-    if (!window.confirm(`Tem a certeza que deseja eliminar o projeto "${project.name}"?`)) return;
+    if (!window.confirm(`Tem certeza que deseja excluir o projeto "${project.name}"?`)) return;
 
     setIsSaving(true);
     const payload = {
@@ -362,7 +358,7 @@ export default function App() {
 
       setProjectsData(prev => prev.filter(p => p.id !== project.id));
     } catch (error) {
-      console.error("Erro ao eliminar projeto:", error);
+      console.error("Erro ao excluir projeto:", error);
     } finally {
       setIsSaving(false);
     }
@@ -399,7 +395,7 @@ export default function App() {
           {!fetchError ? (
             <>
               <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-              <p className="text-slate-500 font-bold tracking-widest text-xs uppercase">A sincronizar Base de Dados...</p>
+              <p className="text-slate-500 font-bold tracking-widest text-xs uppercase">Sincronizando Banco de Dados...</p>
             </>
           ) : (
             <>
@@ -411,7 +407,7 @@ export default function App() {
                 onClick={() => { setIsLoading(true); fetchProjects(); }}
                 className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-100"
               >
-                Tentar Novamente
+                Tentar novamente
               </button>
             </>
           )}
@@ -461,7 +457,7 @@ export default function App() {
           <div className="flex items-center flex-1 max-w-md">
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input type="text" placeholder="Procurar projetos..." className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              <input type="text" placeholder="Pesquisar projetos..." className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -476,7 +472,7 @@ export default function App() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-8 space-y-8">
-          {view === 'details' && selectedProject ? (
+          {view === 'detalhes' && selectedProject ? (
             <Suspense fallback={<div className="flex items-center justify-center p-20"><div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>}>
               <ProjectDetailsView
                 project={selectedProject}
@@ -537,7 +533,7 @@ export default function App() {
                 <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                   <div>
                     <h2 className="text-lg font-bold text-slate-900">Gestão de Projetos</h2>
-                    <p className="text-sm text-slate-500">Acompanhe e gira as suas iniciativas</p>
+                    <p className="text-sm text-slate-500">Acompanhe e gerencie suas iniciativas</p>
                   </div>
                   <div className="flex gap-3">
                     <button onClick={() => setIsCreateOpen(true)} className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors">
@@ -564,7 +560,7 @@ export default function App() {
                         >
                           <td
                             className="px-6 py-5 cursor-pointer group"
-                            onClick={() => { setSelectedProject(project); setView('details'); }}
+                            onClick={() => { setSelectedProject(project); setView('detalhes'); }}
                           >
                             <p className="text-base font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors leading-snug mb-0.5">{project.name}</p>
                             <p className="text-[11px] text-slate-500 font-medium">{project.code} <span className="mx-1 opacity-30">•</span> {project.client || project.initiative}</p>
@@ -661,21 +657,13 @@ export default function App() {
                   </FormField>
 
                   <div className="md:col-span-2">
-                    <FormField label="Project Description">
-                      <textarea rows={3} placeholder="Detailed project description..." value={newProject.description} onChange={(e) => setNewProject({...newProject, description: e.target.value})} className={`${inputClass} resize-none`} />
+                    <FormField label="Descrição do Projeto">
+                      <textarea rows={3} placeholder="Descrição detalhada do projeto..." value={newProject.description} onChange={(e) => setNewProject({...newProject, description: e.target.value})} className={`${inputClass} resize-none`} />
                     </FormField>
                   </div>
 
-                  <FormField label="Location">
-                    <input placeholder="Ex: North Region" value={newProject.location} onChange={(e) => setNewProject({...newProject, location: e.target.value})} className={inputClass} />
-                  </FormField>
-
-                  <FormField label="Allocated Budget">
-                    <input placeholder="Ex: $2.4M (USD)" value={newProject.budget} onChange={(e) => setNewProject({...newProject, budget: e.target.value})} className={inputClass} />
-                  </FormField>
-
                   <div className="md:col-span-2">
-                    <FormField label="Report (Short Status)">
+                    <FormField label="Relatório (Status Resumido)">
                       <textarea rows={2} placeholder="Breve resumo do status..." value={newProject.report} onChange={(e) => setNewProject({...newProject, report: e.target.value})} className={`${inputClass} resize-none`} />
                     </FormField>
                   </div>
@@ -684,7 +672,7 @@ export default function App() {
                 <div className="flex justify-end gap-3 pt-4">
                   <button type="button" onClick={() => setIsCreateOpen(false)} className="px-6 py-2.5 text-slate-600 hover:bg-slate-50 rounded-xl font-bold transition-colors">Cancelar</button>
                   <button type="submit" disabled={isSaving} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold flex items-center gap-2 disabled:opacity-50 hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100">
-                    <Plus size={18} /> {isSaving ? 'A gravar...' : 'Criar Projeto'}
+                    <Plus size={18} /> {isSaving ? 'Salvando...' : 'Criar Projeto'}
                   </button>
                 </div>
               </form>
@@ -754,21 +742,13 @@ export default function App() {
                   </FormField>
 
                   <div className="md:col-span-2">
-                    <FormField label="Project Description">
+                    <FormField label="Descrição do Projeto">
                       <textarea rows={3} value={editingProject.description} onChange={(e) => setEditingProject({...editingProject, description: e.target.value})} className={`${inputClass} resize-none`} />
                     </FormField>
                   </div>
 
-                  <FormField label="Location">
-                    <input value={editingProject.location} onChange={(e) => setEditingProject({...editingProject, location: e.target.value})} className={inputClass} />
-                  </FormField>
-
-                  <FormField label="Allocated Budget">
-                    <input value={editingProject.budget} onChange={(e) => setEditingProject({...editingProject, budget: e.target.value})} className={inputClass} />
-                  </FormField>
-
                   <div className="md:col-span-2">
-                    <FormField label="Report (Short Status)">
+                    <FormField label="Relatório (Status Resumido)">
                       <textarea rows={2} value={editingProject.report} onChange={(e) => setEditingProject({...editingProject, report: e.target.value})} className={`${inputClass} resize-none`} />
                     </FormField>
                   </div>
@@ -777,7 +757,7 @@ export default function App() {
                 <div className="flex justify-end gap-3 pt-4">
                   <button type="button" onClick={() => setIsEditOpen(false)} className="px-6 py-2.5 text-slate-600 hover:bg-slate-50 rounded-xl font-bold transition-colors">Cancelar</button>
                   <button type="submit" disabled={isSaving} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold flex items-center gap-2 disabled:opacity-50 hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100">
-                    <Save size={18} /> {isSaving ? 'A gravar...' : 'Gravar Alterações'}
+                    <Save size={18} /> {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                   </button>
                 </div>
               </form>
@@ -799,7 +779,7 @@ export default function App() {
                   listModalProjects.map((project) => (
                     <div
                       key={project.id}
-                      onClick={() => { setSelectedProject(project); setView('details'); setIsListModalOpen(false); }}
+                      onClick={() => { setSelectedProject(project); setView('detalhes'); setIsListModalOpen(false); }}
                       className="p-4 bg-slate-50 rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition-all cursor-pointer group"
                     >
                       <div className="flex justify-between items-center">
