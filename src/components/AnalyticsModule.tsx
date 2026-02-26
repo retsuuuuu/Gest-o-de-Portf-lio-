@@ -7,10 +7,11 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
+  AreaChart,
+  Area,
   PieChart,
   Pie,
-  Cell,
-  Legend
+  Cell
 } from 'recharts';
 import { 
   TrendingUp, 
@@ -21,7 +22,6 @@ import {
   ArrowDownRight
 } from 'lucide-react';
 import { Project } from '../types';
-import { ALL_PHASES, ALL_STATUS, ALL_FAROL } from '../constants';
 
 const AnalyticsCard = ({ title, value, change, isPositive, icon: Icon }: any) => (
   <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
@@ -39,30 +39,33 @@ const AnalyticsCard = ({ title, value, change, isPositive, icon: Icon }: any) =>
   </div>
 );
 
-export const AnalyticsModule = ({ projectsData, onSegmentClick }: { projectsData: Project[], onSegmentClick: (title: string, projects: Project[]) => void }) => {
+export const AnalyticsModule = ({ projectsData }: { projectsData: Project[] }) => {
   const stats = {
     total: projectsData.length,
-    atrasados: projectsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')).length,
-    emAndamento: projectsData.filter(p => (p.status || '').toLowerCase() === 'em andamento').length,
-    concluidos: projectsData.filter(p => (p.status || '').toLowerCase() === 'concluído').length,
+    atrasados: projectsData.filter(p => p.farol.toLowerCase().includes('atrasado')).length,
+    emAndamento: projectsData.filter(p => p.status === 'Em andamento').length,
+    concluidos: projectsData.filter(p => p.status === 'Concluído').length,
   };
 
-  const statusData = ALL_STATUS.map(s => ({
-    name: s,
-    value: projectsData.filter(p => (p.status || '').toLowerCase() === s.toLowerCase()).length
-  })).filter(d => d.value > 0);
+  const monthlyData = [
+    { name: 'Jan', projetos: 4, concluídos: 2 },
+    { name: 'Fev', projetos: 7, concluídos: 3 },
+    { name: 'Mar', projetos: 9, concluídos: 5 },
+    { name: 'Abr', projetos: 12, concluídos: 8 },
+    { name: 'Mai', projetos: projectsData.length, concluídos: stats.concluidos },
+  ];
 
-  const farolData = ALL_FAROL.map(f => ({
-    name: f,
-    value: projectsData.filter(p => (p.farol || '').toLowerCase() === f.toLowerCase()).length
-  })).filter(d => d.value > 0);
+  const phaseData = [
+    { name: 'Backlog', value: projectsData.filter(p => p.phase === 'Backlog').length },
+    { name: 'Briefing', value: projectsData.filter(p => p.phase === 'Briefing').length },
+    { name: 'Desenvolvimento', value: projectsData.filter(p => p.phase === 'Desenvolvimento').length },
+    { name: 'Escopo', value: projectsData.filter(p => p.phase === 'Escopo').length },
+    { name: 'Homologação', value: projectsData.filter(p => p.phase === 'Homologação Cliente').length },
+    { name: 'Protótipo', value: projectsData.filter(p => p.phase === 'Protótipo').length },
+    { name: 'Valoração', value: projectsData.filter(p => p.phase === 'Valoração').length },
+  ].filter(d => d.value > 0);
 
-  const phaseData = ALL_PHASES.map(ph => ({
-    name: ph,
-    value: projectsData.filter(p => (p.phase || '').toLowerCase() === ph.toLowerCase()).length
-  })).filter(d => d.value > 0);
-
-  const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b', '#10b981', '#3b82f6'];
+  const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b'];
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -72,46 +75,32 @@ export const AnalyticsModule = ({ projectsData, onSegmentClick }: { projectsData
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div onClick={() => onSegmentClick("Todos os Projetos", projectsData)} className="cursor-pointer transition-transform hover:scale-[1.02]">
-          <AnalyticsCard title="Total de Projetos" value={stats.total} change="Atual" isPositive={true} icon={TrendingUp} />
-        </div>
-        <div onClick={() => onSegmentClick("Projetos em Andamento", projectsData.filter(p => (p.status || '').toLowerCase() === 'em andamento'))} className="cursor-pointer transition-transform hover:scale-[1.02]">
-          <AnalyticsCard title="Em Andamento" value={stats.emAndamento} change="Ativos" isPositive={true} icon={Clock} />
-        </div>
-        <div onClick={() => onSegmentClick("Projetos Concluídos", projectsData.filter(p => (p.status || '').toLowerCase() === 'concluído'))} className="cursor-pointer transition-transform hover:scale-[1.02]">
-          <AnalyticsCard title="Taxa de Conclusão" value={`${stats.total ? Math.round((stats.concluidos / stats.total) * 100) : 0}%`} change="Média" isPositive={true} icon={CheckCircle2} />
-        </div>
-        <div onClick={() => onSegmentClick("Projetos Críticos (Atrasados)", projectsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')))} className="cursor-pointer transition-transform hover:scale-[1.02]">
-          <AnalyticsCard title="Projetos Críticos" value={stats.atrasados} change="Alerta" isPositive={false} icon={AlertCircle} />
-        </div>
+        <AnalyticsCard title="Total de Projetos" value={stats.total} change="12%" isPositive={true} icon={TrendingUp} />
+        <AnalyticsCard title="Em Andamento" value={stats.emAndamento} change="5%" isPositive={true} icon={Clock} />
+        <AnalyticsCard title="Taxa de Conclusão" value={`${stats.total ? Math.round((stats.concluidos / stats.total) * 100) : 0}%`} change="8%" isPositive={true} icon={CheckCircle2} />
+        <AnalyticsCard title="Projetos Críticos" value={stats.atrasados} change="2%" isPositive={false} icon={AlertCircle} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-          <h3 className="text-lg font-bold text-slate-900 mb-6">Distribuição por Status</h3>
-          <div className="h-80 w-full flex items-center justify-center">
+          <h3 className="text-lg font-bold text-slate-900 mb-6">Crescimento do Portfólio</h3>
+          <div className="h-80 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={statusData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={5}
-                  dataKey="value"
-                  onClick={(data) => onSegmentClick(`Projetos: ${data.name}`, projectsData.filter(p => (p.status || '').toLowerCase() === data.name.toLowerCase()))}
-                  className="cursor-pointer"
-                >
-                  {statusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="outline-none" />
-                  ))}
-                </Pie>
+              <AreaChart data={monthlyData}>
+                <defs>
+                  <linearGradient id="colorProjetos" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
+                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
                 <Tooltip 
                   contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                 />
-                <Legend verticalAlign="bottom" height={36}/>
-              </PieChart>
+                <Area type="monotone" dataKey="projetos" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorProjetos)" />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
@@ -128,48 +117,10 @@ export const AnalyticsModule = ({ projectsData, onSegmentClick }: { projectsData
                   cursor={{fill: '#f8fafc'}}
                   contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                 />
-                <Bar
-                  dataKey="value"
-                  radius={[0, 4, 4, 0]}
-                  barSize={30}
-                  onClick={(data) => onSegmentClick(`Fase: ${data.name}`, projectsData.filter(p => (p.phase || '').toLowerCase() === data.name.toLowerCase()))}
-                  className="cursor-pointer"
-                >
+                <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={30}>
                   {phaseData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="outline-none" />
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm lg:col-span-2">
-          <h3 className="text-lg font-bold text-slate-900 mb-6">Saúde do Portfólio (Farol)</h3>
-          <div className="h-80 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={farolData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-                <Tooltip
-                  cursor={{fill: '#f8fafc'}}
-                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                />
-                <Bar
-                  dataKey="value"
-                  radius={[4, 4, 0, 0]}
-                  barSize={60}
-                  onClick={(data) => onSegmentClick(`Farol: ${data.name}`, projectsData.filter(p => (p.farol || '').toLowerCase() === data.name.toLowerCase()))}
-                  className="cursor-pointer"
-                >
-                  {farolData.map((entry, index) => {
-                    let color = '#10b981'; // No prazo
-                    if (entry.name.includes('Atrasado (Cliente)')) color = '#f43f5e';
-                    if (entry.name.includes('Atrasado (TradeUp)')) color = '#fb7185';
-                    if (entry.name === 'Concluído') color = '#3b82f6';
-                    return <Cell key={`cell-${index}`} fill={color} className="outline-none" />;
-                  })}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Search, Bell, Settings, Plus, CheckCircle2, Clock,
+  Bell, Settings, Plus, CheckCircle2, Clock,
   Pencil, Save, Calendar, ArrowLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -19,23 +19,22 @@ const StatusBadge = React.memo(({ status }: { status: string }) => {
   return <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${getStyles()}`}>{status || 'N/D'}</span>;
 });
 
-const TeamMemberSelector = React.memo(({ label, role, currentMember, onSelect, availableMembers = [] }: { label: string, role: string, currentMember?: string, onSelect: (name: string) => void, availableMembers?: string[] }) => {
+const TeamMemberSelector = React.memo(({ label, role, currentMember, onSelect, availableMembers = [] }: { label: string, role: string, currentMember?: string, onSelect: (name: string) => Promise<any>, availableMembers?: string[] }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // We use this local effect to detect when the member has changed, implying update finished
-  useEffect(() => {
-    setIsUpdating(false);
-  }, [currentMember]);
-
-  const handleSelect = (name: string) => {
+  const handleSelect = async (name: string) => {
     if (name === currentMember) {
       setIsOpen(false);
       return;
     }
     setIsUpdating(true);
-    onSelect(name);
-    setIsOpen(false);
+    try {
+      await onSelect(name);
+    } finally {
+      setIsUpdating(false);
+      setIsOpen(false);
+    }
   };
 
   return (
@@ -92,7 +91,7 @@ const TeamMemberSelector = React.memo(({ label, role, currentMember, onSelect, a
   );
 });
 
-export const ProjectDetailsView = React.memo(({ project, availableTeam, onBack, onEdit, onPartialUpdate, onRegisterMember }: { project: Project, availableTeam: TeamData, onBack: () => void, onEdit: () => void, onPartialUpdate: (field: string, value: string) => void, onRegisterMember: (name: string, role: string) => void }) => {
+export const ProjectDetailsView = React.memo(({ project, availableTeam, isSaving, onBack, onEdit, onPartialUpdate, onRegisterMember }: { project: Project, availableTeam: TeamData, isSaving: boolean, onBack: () => void, onEdit: () => void, onPartialUpdate: (field: string, value: string) => Promise<any>, onRegisterMember: (name: string, role: string) => void }) => {
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberRole, setNewMemberRole] = useState('UX');
@@ -108,7 +107,6 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, onBack, 
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Header & Breadcrumbs */}
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -137,7 +135,6 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, onBack, 
         </nav>
       </div>
 
-      {/* Main Info Card */}
       <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
         <div className="p-5 sm:p-10">
           <div className="flex flex-col sm:flex-row justify-between items-start gap-6 sm:gap-0 mb-8">
@@ -174,7 +171,6 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, onBack, 
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column */}
         <div className="lg:col-span-2 space-y-8">
           <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-5 sm:p-10 space-y-8">
             <div className="flex justify-between items-center">
@@ -219,7 +215,6 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, onBack, 
           </div>
         </div>
 
-        {/* Right Column */}
         <div className="space-y-8">
           <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-8 space-y-6">
             <div className="flex justify-between items-center">
@@ -316,9 +311,11 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, onBack, 
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"
+                    disabled={isSaving}
+                    className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    Registrar
+                    {isSaving && <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                    {isSaving ? 'Registrando...' : 'Registrar'}
                   </button>
                 </div>
               </form>

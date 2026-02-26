@@ -26,19 +26,5 @@ export default defineConfig(({mode}) => {
         },
       },
     },
-    build: {
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            'vendor-react': ['react', 'react-dom'],
-            'vendor-clerk': ['@clerk/clerk-react'],
-            'vendor-recharts': ['recharts'],
-            'vendor-lucide': ['lucide-react'],
-            'vendor-motion': ['motion'],
-          },
-        },
-      },
-      chunkSizeWarningLimit: 1000,
-    },
   };
 });

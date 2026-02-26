@@ -105,6 +105,24 @@ const FarolIndicator = React.memo(({ farol }: { farol: string }) => {
 export default function App() {
   const { user } = useUser();
 
+  const initUserRole = useCallback(async (userId: string) => {
+    try {
+      await fetch('/api/init-user-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+    } catch (e) {
+      console.error("Erro ao inicializar role do usuário:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user && !user.publicMetadata?.role) {
+      initUserRole(user.id);
+    }
+  }, [user, initUserRole]);
+
   const applyProjectRules = useCallback((proj: Partial<Project>) => {
     const next = { ...proj };
 
@@ -125,6 +143,7 @@ export default function App() {
 
     return next;
   }, []);
+
   const [view, setView] = useState<'dashboard' | 'detalhes'>('dashboard');
   const [activeTab, setActiveTab] = useState('Visão Geral');
   const [searchQuery, setSearchQuery] = useState('');
@@ -147,9 +166,17 @@ export default function App() {
     }
   });
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(() => {
+    try {
+      return !localStorage.getItem('tradeup_projects_cache');
+    } catch {
+      return true;
+    }
+  });
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
+  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
 
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -168,8 +195,9 @@ export default function App() {
 
   const fetchProjects = useCallback(async () => {
     setFetchError(null);
+    setIsFetching(true);
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
 
     try {
       const response = await fetch(API_URL, { signal: controller.signal });
@@ -178,7 +206,7 @@ export default function App() {
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
       const data = await response.json();
-      const projects = data.projetos || [];
+      const projects = Array.isArray(data) ? data : data.projetos || [];
       const team = data.equipeDisponivel || { "P.O": [], "UX": [], "QA": [], "TI": [] };
 
       const mapped: Project[] = projects.map((row: any, i: number) => ({
@@ -215,30 +243,13 @@ export default function App() {
       }
     } finally {
       setIsLoading(false);
+      setIsFetching(false);
     }
   }, []);
 
   useEffect(() => {
     fetchProjects();
   }, [fetchProjects]);
-
-  const initUserRole = useCallback(async (userId: string) => {
-    try {
-      await fetch('/api/init-user-role', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
-      });
-    } catch (e) {
-      console.error("Erro ao inicializar role do usuário:", e);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (user && !user.publicMetadata?.role) {
-      initUserRole(user.id);
-    }
-  }, [user, initUserRole]);
 
   const handleSaveProject = useCallback(async (projectToSave: Partial<Project>, isEdit: boolean) => {
     setIsSaving(true);
@@ -264,7 +275,6 @@ export default function App() {
     };
 
     try {
-      // O mode: 'no-cors' é a intervenção cirúrgica para contornar o bloqueio do Google.
       await fetch(API_URL, {
         method: 'POST',
         mode: 'no-cors',
@@ -272,7 +282,6 @@ export default function App() {
         body: JSON.stringify(payload)
       });
 
-      // Atualização Otimista da Interface
       if (isEdit) {
         setProjectsData(prev => prev.map(p => p.id === projectToSave.id ? { ...p, ...projectToSave, code } as Project : p));
         setIsEditOpen(false);
@@ -290,6 +299,7 @@ export default function App() {
   }, []);
 
   const handlePartialUpdate = useCallback(async (projectCode: string, field: string, value: string) => {
+    setIsSaving(true);
     const payload = {
       action: "update",
       payload: {
@@ -307,19 +317,14 @@ export default function App() {
       });
 
       const fieldKey = field.toLowerCase().replace('.', '') as keyof Project;
-
-      setProjectsData(prev => prev.map(p =>
-        p.code === projectCode ? { ...p, [fieldKey]: value } : p
-      ));
-
-      setSelectedProject(prev => {
-        if (prev?.code === projectCode) {
-          return { ...prev, [fieldKey]: value };
-        }
-        return prev;
-      });
+      setProjectsData(prev => prev.map(p => p.code === projectCode ? { ...p, [fieldKey]: value } : p));
+      setSelectedProject(prev => prev?.code === projectCode ? { ...prev, [fieldKey]: value } : prev);
+      return true;
     } catch (error) {
       console.error("Erro no update parcial:", error);
+      return false;
+    } finally {
+      setIsSaving(false);
     }
   }, []);
 
@@ -327,10 +332,7 @@ export default function App() {
     setIsSaving(true);
     const payload = {
       action: "addProfessional",
-      payload: {
-        "NOME": name,
-        "FUNCAO": role
-      }
+      payload: { "NOME": name, "FUNCAO": role }
     };
 
     try {
@@ -341,14 +343,11 @@ export default function App() {
         body: JSON.stringify(payload)
       });
 
-      // Optimistic Update
       setTeamData(prev => {
         const newTeam = { ...prev };
         const roleKey = role as keyof TeamData;
-        if (newTeam[roleKey]) {
-          if (!newTeam[roleKey].includes(name)) {
-            newTeam[roleKey] = [...newTeam[roleKey], name];
-          }
+        if (newTeam[roleKey] && !newTeam[roleKey].includes(name)) {
+          newTeam[roleKey] = [...newTeam[roleKey], name];
         }
         localStorage.setItem('tradeup_team_cache', JSON.stringify(newTeam));
         return newTeam;
@@ -364,11 +363,10 @@ export default function App() {
     if (!window.confirm(`Tem certeza que deseja excluir o projeto "${project.name}"?`)) return;
 
     setIsSaving(true);
+    setDeletingProjectId(project.id);
     const payload = {
       action: "delete",
-      payload: {
-        "CODIGO PROJETO": project.code
-      }
+      payload: { "CODIGO PROJETO": project.code }
     };
 
     try {
@@ -384,6 +382,7 @@ export default function App() {
       console.error("Erro ao excluir projeto:", error);
     } finally {
       setIsSaving(false);
+      setDeletingProjectId(null);
     }
   }, []);
 
@@ -416,10 +415,10 @@ export default function App() {
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6 text-center">
         <div className="space-y-6 max-w-xs">
           {!fetchError ? (
-            <>
+            <div className="space-y-4">
               <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-              <p className="text-slate-500 font-bold tracking-widest text-xs uppercase">Sincronizando Banco de Dados...</p>
-            </>
+              <p className="text-slate-500 font-bold tracking-widest text-[10px] uppercase leading-tight">Sincronizando Banco de Dados...</p>
+            </div>
           ) : (
             <>
               <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-2">
@@ -484,6 +483,12 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            {(isSaving || isFetching) && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 rounded-full animate-pulse">
+                <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce" />
+                <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Sincronizando...</span>
+              </div>
+            )}
             <button onClick={() => setIsNotificationsOpen(true)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg relative">
               <Bell size={20} /><span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
             </button>
@@ -496,10 +501,11 @@ export default function App() {
 
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-8">
           {view === 'detalhes' && selectedProject ? (
-            <Suspense fallback={<div className="flex items-center justify-center p-20"><div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>}>
+            <Suspense fallback={<div className="flex-1 flex items-center justify-center min-h-[400px]"><div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>}>
               <ProjectDetailsView
                 project={selectedProject}
                 availableTeam={teamData}
+                isSaving={isSaving}
                 onBack={() => setView('dashboard')}
                 onEdit={() => { setEditingProject(selectedProject); setIsEditOpen(true); }}
                 onPartialUpdate={(field, value) => handlePartialUpdate(selectedProject.code, field, value)}
@@ -514,42 +520,12 @@ export default function App() {
                   transition={{ duration: 2, repeat: Infinity }}
                   className={`h-full rounded-2xl transition-all ${stats.atrasados > 0 ? 'ring-2 ring-rose-500 ring-offset-2' : ''}`}
                 >
-                  <StatCard
-                    label="PROJETOS ATRASADOS"
-                    value={stats.atrasados}
-                    icon={AlertCircle}
-                    color="bg-rose-500"
-                    onClick={() => handleOpenListModal("Projetos Atrasados", projectsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')))}
-                  />
+                  <StatCard label="PROJETOS ATRASADOS" value={stats.atrasados} icon={AlertCircle} color="bg-rose-500" onClick={() => handleOpenListModal("Projetos Atrasados", projectsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')))} />
                 </motion.div>
-                <StatCard
-                  label="PROJETOS EM ANDAMENTO"
-                  value={stats.emAndamento}
-                  icon={Clock}
-                  color="bg-blue-500"
-                  onClick={() => handleOpenListModal("Projetos em Andamento", projectsData.filter(p => (p.status || '').toLowerCase() === 'em andamento'))}
-                />
-                <StatCard
-                  label="PROJETOS PAUSADOS"
-                  value={stats.pausados}
-                  icon={PauseCircle}
-                  color="bg-amber-500"
-                  onClick={() => handleOpenListModal("Projetos Pausados", projectsData.filter(p => (p.status || '').toLowerCase() === 'pausado'))}
-                />
-                <StatCard
-                  label="PROJETOS EM IMPEDIMENTO"
-                  value={stats.impedimento}
-                  icon={ShieldAlert}
-                  color="bg-slate-500"
-                  onClick={() => handleOpenListModal("Projetos em Impedimento", projectsData.filter(p => (p.status || '').toLowerCase() === 'impedimento'))}
-                />
-                <StatCard
-                  label="PROJETOS CONCLUÍDOS"
-                  value={stats.concluidos}
-                  icon={CheckCircle2}
-                  color="bg-emerald-500"
-                  onClick={() => handleOpenListModal("Projetos Concluídos", projectsData.filter(p => (p.status || '').toLowerCase() === 'concluído'))}
-                />
+                <StatCard label="PROJETOS EM ANDAMENTO" value={stats.emAndamento} icon={Clock} color="bg-blue-500" onClick={() => handleOpenListModal("Projetos em Andamento", projectsData.filter(p => (p.status || '').toLowerCase() === 'em andamento'))} />
+                <StatCard label="PROJETOS PAUSADOS" value={stats.pausados} icon={PauseCircle} color="bg-amber-500" onClick={() => handleOpenListModal("Projetos Pausados", projectsData.filter(p => (p.status || '').toLowerCase() === 'pausado'))} />
+                <StatCard label="PROJETOS EM IMPEDIMENTO" value={stats.impedimento} icon={ShieldAlert} color="bg-slate-500" onClick={() => handleOpenListModal("Projetos em Impedimento", projectsData.filter(p => (p.status || '').toLowerCase() === 'impedimento'))} />
+                <StatCard label="PROJETOS CONCLUÍDOS" value={stats.concluidos} icon={CheckCircle2} color="bg-emerald-500" onClick={() => handleOpenListModal("Projetos Concluídos", projectsData.filter(p => (p.status || '').toLowerCase() === 'concluído'))} />
               </div>
 
               <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -558,11 +534,9 @@ export default function App() {
                     <h2 className="text-lg font-bold text-slate-900">Gestão de Projetos</h2>
                     <p className="text-sm text-slate-500">Acompanhe e gerencie suas iniciativas</p>
                   </div>
-                  <div className="flex gap-3">
-                    <button onClick={() => setIsCreateOpen(true)} className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors">
-                      <Plus size={16} /> Novo Projeto
-                    </button>
-                  </div>
+                  <button onClick={() => setIsCreateOpen(true)} className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors">
+                    <Plus size={16} /> Novo Projeto
+                  </button>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
@@ -577,27 +551,19 @@ export default function App() {
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {filteredProjects.map((project) => (
-                        <tr
-                          key={project.id}
-                          className="hover:bg-slate-50/50 transition-colors"
-                        >
-                          <td
-                            className="px-6 py-5 cursor-pointer group"
-                            onClick={() => { setSelectedProject(project); setView('detalhes'); }}
-                          >
+                        <tr key={project.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-6 py-5 cursor-pointer group" onClick={() => { setSelectedProject(project); setView('detalhes'); }}>
                             <p className="text-base font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors leading-snug mb-0.5">{project.name}</p>
                             <p className="text-[11px] text-slate-500 font-medium">{project.code} <span className="mx-1 opacity-30">•</span> {project.client || project.initiative}</p>
                           </td>
-                          <td className="px-6 py-4"><span className="text-sm text-slate-600">{project.phase}</span></td>
+                          <td className="px-6 py-4 text-sm text-slate-600">{project.phase}</td>
                           <td className="px-6 py-4"><StatusBadge status={project.status} /></td>
                           <td className="px-6 py-4"><FarolIndicator farol={project.farol} /></td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <button onClick={() => { setEditingProject(project); setIsEditOpen(true); }} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
-                                <Pencil size={16} />
-                              </button>
-                              <button onClick={() => handleDeleteProject(project)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg">
-                                <Trash2 size={16} />
+                              <button onClick={() => { setEditingProject(project); setIsEditOpen(true); }} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"><Pencil size={16} /></button>
+                              <button onClick={() => handleDeleteProject(project)} disabled={deletingProjectId === project.id} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg disabled:opacity-50">
+                                {deletingProjectId === project.id ? <div className="w-4 h-4 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" /> : <Trash2 size={16} />}
                               </button>
                             </div>
                           </td>
@@ -609,70 +575,45 @@ export default function App() {
               </section>
             </>
           ) : (
-            <Suspense fallback={<div className="flex items-center justify-center p-20"><div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>}>
+            <Suspense fallback={<div className="flex-1 flex items-center justify-center min-h-[400px]"><div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>}>
               <AnalyticsModule projectsData={projectsData} onSegmentClick={handleOpenListModal} />
             </Suspense>
           )}
         </div>
       </main>
 
-      {/* Modais de Interação */}
       <AnimatePresence>
         {isCreateOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-4 sm:p-6 my-8">
               <div className="flex justify-between items-center mb-8">
                 <h2 className="text-2xl font-bold text-slate-900">Novo Projeto</h2>
-                <button onClick={() => setIsCreateOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors p-2 hover:bg-slate-50 rounded-full">
-                  <X size={24} />
-                </button>
+                <button onClick={() => setIsCreateOpen(false)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-50 rounded-full"><X size={24} /></button>
               </div>
               <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(newProject, false); }} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="md:col-span-2">
-                    <FormField label="Nome do Projeto">
-                      <input required placeholder="Nome do Projeto" value={newProject.name} onChange={(e) => setNewProject({...newProject, name: e.target.value})} className={inputClass} />
-                    </FormField>
+                    <FormField label="Nome do Projeto"><input required placeholder="Nome do Projeto" value={newProject.name} onChange={(e) => setNewProject({...newProject, name: e.target.value})} className={inputClass} /></FormField>
                   </div>
-
-                  <FormField label="Iniciativa">
-                    <input required placeholder="Iniciativa" value={newProject.initiative} onChange={(e) => setNewProject({...newProject, initiative: e.target.value})} className={inputClass} />
-                  </FormField>
-
-                  <FormField label="Cliente">
-                    <input required placeholder="Cliente" value={newProject.client} onChange={(e) => setNewProject({...newProject, client: e.target.value})} className={inputClass} />
-                  </FormField>
-
+                  <FormField label="Iniciativa"><input required placeholder="Iniciativa" value={newProject.initiative} onChange={(e) => setNewProject({...newProject, initiative: e.target.value})} className={inputClass} /></FormField>
+                  <FormField label="Cliente"><input required placeholder="Cliente" value={newProject.client} onChange={(e) => setNewProject({...newProject, client: e.target.value})} className={inputClass} /></FormField>
                   <div className="md:col-span-2">
-                    <FormField label="Código do Projeto">
-                      <input placeholder="Ex: C00001" value={newProject.code} onChange={(e) => setNewProject({...newProject, code: e.target.value})} className={inputClass} />
-                    </FormField>
+                    <FormField label="Código do Projeto"><input placeholder="Ex: C00001" value={newProject.code} onChange={(e) => setNewProject({...newProject, code: e.target.value})} className={inputClass} /></FormField>
                   </div>
-
                   <FormField label="Status">
-                    <select
-                      value={newProject.status}
-                      onChange={(e) => {
-                        const status = e.target.value;
-                        let phase = newProject.phase;
-                        if (status === 'Backlog') phase = 'Backlog';
-                        else if (status === 'Concluído') phase = 'Concluído';
-                        else if (phase === 'Backlog' || phase === 'Concluído') phase = 'Briefing';
-                        setNewProject(applyProjectRules({...newProject, status, phase}));
-                      }}
-                      className={inputClass}
-                    >
+                    <select value={newProject.status} onChange={(e) => {
+                      const status = e.target.value;
+                      let phase = newProject.phase;
+                      if (status === 'Backlog') phase = 'Backlog';
+                      else if (status === 'Concluído') phase = 'Concluído';
+                      else if (phase === 'Backlog' || phase === 'Concluído') phase = 'Briefing';
+                      setNewProject(applyProjectRules({...newProject, status, phase}));
+                    }} className={inputClass}>
                       {ALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </FormField>
-
                   <FormField label="Fase">
-                    <select
-                      value={newProject.phase}
-                      onChange={(e) => setNewProject({...newProject, phase: e.target.value})}
-                      className={inputClass}
-                      disabled={newProject.status === 'Backlog' || newProject.status === 'Concluído'}
-                    >
+                    <select value={newProject.phase} onChange={(e) => setNewProject({...newProject, phase: e.target.value})} disabled={newProject.status === 'Backlog' || newProject.status === 'Concluído'} className={inputClass}>
                       {ALL_PHASES.filter(f => {
                         if (newProject.status === 'Backlog') return f === 'Backlog';
                         if (newProject.status === 'Concluído') return f === 'Concluído';
@@ -680,58 +621,24 @@ export default function App() {
                       }).map(f => <option key={f} value={f}>{f}</option>)}
                     </select>
                   </FormField>
-
                   <FormField label="Farol">
-                    <select value={newProject.farol} onChange={(e) => setNewProject({...newProject, farol: e.target.value})} className={inputClass}>
-                      {ALL_FAROL.map(f => <option key={f} value={f}>{f}</option>)}
-                    </select>
+                    <select value={newProject.farol} onChange={(e) => setNewProject({...newProject, farol: e.target.value})} className={inputClass}>{ALL_FAROL.map(f => <option key={f} value={f}>{f}</option>)}</select>
                   </FormField>
-
-                  <FormField label="Data Base (Baseline)">
-                    <input
-                      placeholder="DD/MM/AAAA"
-                      value={newProject.baseline}
-                      onChange={(e) => {
-                        const baseline = maskDate(e.target.value);
-                        setNewProject(applyProjectRules({...newProject, baseline}));
-                      }}
-                      className={inputClass}
-                    />
-                  </FormField>
-
-                  <FormField label="Data de Entrega">
-                    <input
-                      placeholder="DD/MM/AAAA"
-                      value={newProject.deliveryDate}
-                      onChange={(e) => {
-                        const deliveryDate = maskDate(e.target.value);
-                        setNewProject(applyProjectRules({...newProject, deliveryDate}));
-                      }}
-                      className={inputClass}
-                    />
-                  </FormField>
-
-                  <FormField label="Data Replanejada">
-                    <input placeholder="DD/MM/AAAA" value={newProject.replannedDate} onChange={(e) => setNewProject({...newProject, replannedDate: maskDate(e.target.value)})} className={inputClass} />
-                  </FormField>
-
+                  <FormField label="Data Base (Baseline)"><input placeholder="DD/MM/AAAA" value={newProject.baseline} onChange={(e) => setNewProject(applyProjectRules({...newProject, baseline: maskDate(e.target.value)}))} className={inputClass} /></FormField>
+                  <FormField label="Data de Entrega"><input placeholder="DD/MM/AAAA" value={newProject.deliveryDate} onChange={(e) => setNewProject(applyProjectRules({...newProject, deliveryDate: maskDate(e.target.value)}))} className={inputClass} /></FormField>
+                  <FormField label="Data Replanejada"><input placeholder="DD/MM/AAAA" value={newProject.replannedDate} onChange={(e) => setNewProject({...newProject, replannedDate: maskDate(e.target.value)})} className={inputClass} /></FormField>
                   <div className="md:col-span-2">
-                    <FormField label="Descrição do Projeto">
-                      <textarea rows={3} placeholder="Descrição detalhada do projeto..." value={newProject.description} onChange={(e) => setNewProject({...newProject, description: e.target.value})} className={`${inputClass} resize-none`} />
-                    </FormField>
+                    <FormField label="Descrição do Projeto"><textarea rows={3} placeholder="Descrição detalhada do projeto..." value={newProject.description} onChange={(e) => setNewProject({...newProject, description: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
                   </div>
-
                   <div className="md:col-span-2">
-                    <FormField label="Relatório (Status Resumido)">
-                      <textarea rows={2} placeholder="Breve resumo do status..." value={newProject.report} onChange={(e) => setNewProject({...newProject, report: e.target.value})} className={`${inputClass} resize-none`} />
-                    </FormField>
+                    <FormField label="Relatório (Status Resumido)"><textarea rows={2} placeholder="Breve resumo do status..." value={newProject.report} onChange={(e) => setNewProject({...newProject, report: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
                   </div>
                 </div>
-
                 <div className="flex justify-end gap-3 pt-4">
                   <button type="button" onClick={() => setIsCreateOpen(false)} className="px-6 py-2.5 text-slate-600 hover:bg-slate-50 rounded-xl font-bold transition-colors">Cancelar</button>
-                  <button type="submit" disabled={isSaving} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold flex items-center gap-2 disabled:opacity-50 hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100">
-                    <Plus size={18} /> {isSaving ? 'Salvando...' : 'Criar Projeto'}
+                  <button type="submit" disabled={isSaving} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100 min-w-[160px]">
+                    {isSaving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Plus size={18} />}
+                    {isSaving ? 'Salvando...' : 'Criar Projeto'}
                   </button>
                 </div>
               </form>
@@ -744,56 +651,30 @@ export default function App() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-4 sm:p-6 my-8">
               <div className="flex justify-between items-center mb-8">
                 <h2 className="text-2xl font-bold text-slate-900">Editar Projeto</h2>
-                <button onClick={() => setIsEditOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors p-2 hover:bg-slate-50 rounded-full">
-                  <X size={24} />
-                </button>
+                <button onClick={() => setIsEditOpen(false)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-50 rounded-full"><X size={24} /></button>
               </div>
               <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(editingProject, true); }} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="md:col-span-2">
-                    <FormField label="Nome do Projeto">
-                      <input required value={editingProject.name} onChange={(e) => setEditingProject({...editingProject, name: e.target.value})} className={inputClass} />
-                    </FormField>
+                    <FormField label="Nome do Projeto"><input required value={editingProject.name} onChange={(e) => setEditingProject({...editingProject, name: e.target.value})} className={inputClass} /></FormField>
                   </div>
-
-                  <FormField label="Iniciativa">
-                    <input required value={editingProject.initiative} onChange={(e) => setEditingProject({...editingProject, initiative: e.target.value})} className={inputClass} />
-                  </FormField>
-
-                  <FormField label="Cliente">
-                    <input required value={editingProject.client} onChange={(e) => setEditingProject({...editingProject, client: e.target.value})} className={inputClass} />
-                  </FormField>
-
+                  <FormField label="Iniciativa"><input required value={editingProject.initiative} onChange={(e) => setEditingProject({...editingProject, initiative: e.target.value})} className={inputClass} /></FormField>
+                  <FormField label="Cliente"><input required value={editingProject.client} onChange={(e) => setEditingProject({...editingProject, client: e.target.value})} className={inputClass} /></FormField>
                   <div className="md:col-span-2">
-                    <FormField label="Código do Projeto">
-                      <input required value={editingProject.code} onChange={(e) => setEditingProject({...editingProject, code: e.target.value})} className={inputClass} />
-                    </FormField>
+                    <FormField label="Código do Projeto"><input required value={editingProject.code} onChange={(e) => setEditingProject({...editingProject, code: e.target.value})} className={inputClass} /></FormField>
                   </div>
-
                   <FormField label="Status">
-                    <select
-                      value={editingProject.status}
-                      onChange={(e) => {
-                        const status = e.target.value;
-                        let phase = editingProject.phase;
-                        if (status === 'Backlog') phase = 'Backlog';
-                        else if (status === 'Concluído') phase = 'Concluído';
-                        else if (phase === 'Backlog' || phase === 'Concluído') phase = 'Briefing';
-                        setEditingProject(applyProjectRules({...editingProject, status, phase}) as Project);
-                      }}
-                      className={inputClass}
-                    >
-                      {ALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
+                    <select value={editingProject.status} onChange={(e) => {
+                      const status = e.target.value;
+                      let phase = editingProject.phase;
+                      if (status === 'Backlog') phase = 'Backlog';
+                      else if (status === 'Concluído') phase = 'Concluído';
+                      else if (phase === 'Backlog' || phase === 'Concluído') phase = 'Briefing';
+                      setEditingProject(applyProjectRules({...editingProject, status, phase}) as Project);
+                    }} className={inputClass}>{ALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select>
                   </FormField>
-
                   <FormField label="Fase">
-                    <select
-                      value={editingProject.phase}
-                      onChange={(e) => setEditingProject({...editingProject, phase: e.target.value})}
-                      className={inputClass}
-                      disabled={editingProject.status === 'Backlog' || editingProject.status === 'Concluído'}
-                    >
+                    <select value={editingProject.phase} onChange={(e) => setEditingProject({...editingProject, phase: e.target.value})} disabled={editingProject.status === 'Backlog' || editingProject.status === 'Concluído'} className={inputClass}>
                       {ALL_PHASES.filter(f => {
                         if (editingProject.status === 'Backlog') return f === 'Backlog';
                         if (editingProject.status === 'Concluído') return f === 'Concluído';
@@ -801,58 +682,24 @@ export default function App() {
                       }).map(f => <option key={f} value={f}>{f}</option>)}
                     </select>
                   </FormField>
-
                   <FormField label="Farol">
-                    <select value={editingProject.farol} onChange={(e) => setEditingProject({...editingProject, farol: e.target.value})} className={inputClass}>
-                      {ALL_FAROL.map(f => <option key={f} value={f}>{f}</option>)}
-                    </select>
+                    <select value={editingProject.farol} onChange={(e) => setEditingProject({...editingProject, farol: e.target.value})} className={inputClass}>{ALL_FAROL.map(f => <option key={f} value={f}>{f}</option>)}</select>
                   </FormField>
-
-                  <FormField label="Data Base (Baseline)">
-                    <input
-                      placeholder="DD/MM/AAAA"
-                      value={editingProject.baseline}
-                      onChange={(e) => {
-                        const baseline = maskDate(e.target.value);
-                        setEditingProject(applyProjectRules({...editingProject, baseline}) as Project);
-                      }}
-                      className={inputClass}
-                    />
-                  </FormField>
-
-                  <FormField label="Data de Entrega">
-                    <input
-                      placeholder="DD/MM/AAAA"
-                      value={editingProject.deliveryDate}
-                      onChange={(e) => {
-                        const deliveryDate = maskDate(e.target.value);
-                        setEditingProject(applyProjectRules({...editingProject, deliveryDate}) as Project);
-                      }}
-                      className={inputClass}
-                    />
-                  </FormField>
-
-                  <FormField label="Data Replanejada">
-                    <input placeholder="DD/MM/AAAA" value={editingProject.replannedDate} onChange={(e) => setEditingProject({...editingProject, replannedDate: maskDate(e.target.value)})} className={inputClass} />
-                  </FormField>
-
+                  <FormField label="Data Base (Baseline)"><input placeholder="DD/MM/AAAA" value={editingProject.baseline} onChange={(e) => setEditingProject(applyProjectRules({...editingProject, baseline: maskDate(e.target.value)}) as Project)} className={inputClass} /></FormField>
+                  <FormField label="Data de Entrega"><input placeholder="DD/MM/AAAA" value={editingProject.deliveryDate} onChange={(e) => setEditingProject(applyProjectRules({...editingProject, deliveryDate: maskDate(e.target.value)}) as Project)} className={inputClass} /></FormField>
+                  <FormField label="Data Replanejada"><input placeholder="DD/MM/AAAA" value={editingProject.replannedDate} onChange={(e) => setEditingProject({...editingProject, replannedDate: maskDate(e.target.value)})} className={inputClass} /></FormField>
                   <div className="md:col-span-2">
-                    <FormField label="Descrição do Projeto">
-                      <textarea rows={3} value={editingProject.description} onChange={(e) => setEditingProject({...editingProject, description: e.target.value})} className={`${inputClass} resize-none`} />
-                    </FormField>
+                    <FormField label="Descrição do Projeto"><textarea rows={3} value={editingProject.description} onChange={(e) => setEditingProject({...editingProject, description: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
                   </div>
-
                   <div className="md:col-span-2">
-                    <FormField label="Relatório (Status Resumido)">
-                      <textarea rows={2} value={editingProject.report} onChange={(e) => setEditingProject({...editingProject, report: e.target.value})} className={`${inputClass} resize-none`} />
-                    </FormField>
+                    <FormField label="Relatório (Status Resumido)"><textarea rows={2} value={editingProject.report} onChange={(e) => setEditingProject({...editingProject, report: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
                   </div>
                 </div>
-
                 <div className="flex justify-end gap-3 pt-4">
                   <button type="button" onClick={() => setIsEditOpen(false)} className="px-6 py-2.5 text-slate-600 hover:bg-slate-50 rounded-xl font-bold transition-colors">Cancelar</button>
-                  <button type="submit" disabled={isSaving} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold flex items-center gap-2 disabled:opacity-50 hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100">
-                    <Save size={18} /> {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+                  <button type="submit" disabled={isSaving} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100 min-w-[180px]">
+                    {isSaving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={18} />}
+                    {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                   </button>
                 </div>
               </form>
@@ -865,44 +712,33 @@ export default function App() {
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 relative my-8">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-slate-900">{listModalTitle}</h2>
-                <button onClick={() => setIsListModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors p-2 hover:bg-slate-50 rounded-full">
-                  <X size={24} />
-                </button>
+                <button onClick={() => setIsListModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-50 rounded-full"><X size={24} /></button>
               </div>
               <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                {listModalProjects.length > 0 ? (
-                  listModalProjects.map((project) => (
-                    <div
-                      key={project.id}
-                      onClick={() => { setSelectedProject(project); setView('detalhes'); setIsListModalOpen(false); }}
-                      className="p-4 bg-slate-50 rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition-all cursor-pointer group"
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{project.name}</p>
-                          <p className="text-xs text-slate-500 font-mono">{project.code}</p>
-                        </div>
+                {listModalProjects.length > 0 ? listModalProjects.map((project) => (
+                  <div key={project.id} onClick={() => { setSelectedProject(project); setView('detalhes'); setIsListModalOpen(false); }} className="p-4 bg-slate-50 rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition-all cursor-pointer group">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{project.name}</p>
+                        <p className="text-xs text-slate-500 font-mono">{project.code}</p>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <p className="text-center py-8 text-slate-500 text-sm">Nenhum projeto encontrado nesta categoria.</p>
-                )}
+                  </div>
+                )) : <p className="text-center py-8 text-slate-500 text-sm">Nenhum projeto encontrado nesta categoria.</p>}
               </div>
             </motion.div>
           </div>
         )}
-
       </AnimatePresence>
-      <Suspense fallback={null}>
-        <NotificationsModal
-          isOpen={isNotificationsOpen}
-          onClose={() => setIsNotificationsOpen(false)}
-        />
-        <SettingsModal
-          isOpen={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
-        />
+      <Suspense fallback={
+        (isNotificationsOpen || isSettingsOpen) ? (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/20 backdrop-blur-[2px]">
+            <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : null
+      }>
+        <NotificationsModal isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
+        <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       </Suspense>
         </div>
       </SignedIn>
