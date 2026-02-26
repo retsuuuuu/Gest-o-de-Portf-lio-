@@ -1,6 +1,6 @@
 export type ProjectPhase = 'Backlog' | 'Briefing' | 'Desenvolvimento' | 'Escopo' | 'Homologação Cliente' | 'Concluído' | 'Protótipo' | 'Valoração';
 export type ProjectStatus = 'Backlog' | 'Concluído' | 'Em andamento' | 'Pausado' | 'Impedimento';
-export type ProjectFarol = 'No prazo' | 'Atrasado (Cliente)' | 'Atrasado (TradeUp)' | 'Concluído';
+export type ProjectFarol = 'No prazo' | 'Atrasado (Cliente)' | 'Atrasado (TradeUp)' | 'Concluído' | 'Atrasado';
 
 export interface TeamData {
   "P.O": string[];

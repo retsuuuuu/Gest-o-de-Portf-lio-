@@ -7,6 +7,8 @@ import {
 import { useUser, SignedIn, SignedOut, SignIn, UserButton } from '@clerk/clerk-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Project, TeamData } from './types';
+import { ALL_PHASES, ALL_STATUS, ALL_FAROL } from './constants';
+import { isPastDate } from './utils';
 
 // Lazy load heavy components
 const AnalyticsModule = lazy(() => import('./components/AnalyticsModule').then(m => ({ default: m.AnalyticsModule })));
@@ -102,6 +104,27 @@ const FarolIndicator = React.memo(({ farol }: { farol: string }) => {
 
 export default function App() {
   const { user } = useUser();
+
+  const applyProjectRules = useCallback((proj: Partial<Project>) => {
+    const next = { ...proj };
+
+    // Regra 1: Data de Entrega preenchida -> Concluído
+    if (next.deliveryDate && next.deliveryDate.length === 10) {
+      next.status = 'Concluído';
+      next.phase = 'Concluído';
+      next.farol = 'Concluído';
+      return next;
+    }
+
+    // Regra 2: Data Base (Baseline) menor que hoje e não concluído -> Atrasado
+    if (next.status !== 'Concluído' && next.baseline && next.baseline.length === 10) {
+      if (isPastDate(next.baseline)) {
+        next.farol = 'Atrasado (TradeUp)';
+      }
+    }
+
+    return next;
+  }, []);
   const [view, setView] = useState<'dashboard' | 'detalhes'>('dashboard');
   const [activeTab, setActiveTab] = useState('Visão Geral');
   const [searchQuery, setSearchQuery] = useState('');
@@ -626,30 +649,66 @@ export default function App() {
                     </FormField>
                   </div>
 
-                  <FormField label="Fase">
-                    <select value={newProject.phase} onChange={(e) => setNewProject({...newProject, phase: e.target.value})} className={inputClass}>
-                      {['Backlog', 'Briefing', 'Desenvolvimento', 'Escopo', 'Homologação Cliente', 'Concluído', 'Protótipo', 'Valoração'].map(f => <option key={f} value={f}>{f}</option>)}
+                  <FormField label="Status">
+                    <select
+                      value={newProject.status}
+                      onChange={(e) => {
+                        const status = e.target.value;
+                        let phase = newProject.phase;
+                        if (status === 'Backlog') phase = 'Backlog';
+                        else if (status === 'Concluído') phase = 'Concluído';
+                        else if (phase === 'Backlog' || phase === 'Concluído') phase = 'Briefing';
+                        setNewProject(applyProjectRules({...newProject, status, phase}));
+                      }}
+                      className={inputClass}
+                    >
+                      {ALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </FormField>
 
-                  <FormField label="Status">
-                    <select value={newProject.status} onChange={(e) => setNewProject({...newProject, status: e.target.value})} className={inputClass}>
-                      {['Backlog', 'Concluído', 'Em andamento', 'Pausado', 'Impedimento'].map(s => <option key={s} value={s}>{s}</option>)}
+                  <FormField label="Fase">
+                    <select
+                      value={newProject.phase}
+                      onChange={(e) => setNewProject({...newProject, phase: e.target.value})}
+                      className={inputClass}
+                      disabled={newProject.status === 'Backlog' || newProject.status === 'Concluído'}
+                    >
+                      {ALL_PHASES.filter(f => {
+                        if (newProject.status === 'Backlog') return f === 'Backlog';
+                        if (newProject.status === 'Concluído') return f === 'Concluído';
+                        return f !== 'Backlog' && f !== 'Concluído';
+                      }).map(f => <option key={f} value={f}>{f}</option>)}
                     </select>
                   </FormField>
 
                   <FormField label="Farol">
                     <select value={newProject.farol} onChange={(e) => setNewProject({...newProject, farol: e.target.value})} className={inputClass}>
-                      {['No prazo', 'Atrasado (Cliente)', 'Atrasado (TradeUp)', 'Concluído'].map(f => <option key={f} value={f}>{f}</option>)}
+                      {ALL_FAROL.map(f => <option key={f} value={f}>{f}</option>)}
                     </select>
                   </FormField>
 
                   <FormField label="Data Base (Baseline)">
-                    <input placeholder="DD/MM/AAAA" value={newProject.baseline} onChange={(e) => setNewProject({...newProject, baseline: maskDate(e.target.value)})} className={inputClass} />
+                    <input
+                      placeholder="DD/MM/AAAA"
+                      value={newProject.baseline}
+                      onChange={(e) => {
+                        const baseline = maskDate(e.target.value);
+                        setNewProject(applyProjectRules({...newProject, baseline}));
+                      }}
+                      className={inputClass}
+                    />
                   </FormField>
 
                   <FormField label="Data de Entrega">
-                    <input placeholder="DD/MM/AAAA" value={newProject.deliveryDate} onChange={(e) => setNewProject({...newProject, deliveryDate: maskDate(e.target.value)})} className={inputClass} />
+                    <input
+                      placeholder="DD/MM/AAAA"
+                      value={newProject.deliveryDate}
+                      onChange={(e) => {
+                        const deliveryDate = maskDate(e.target.value);
+                        setNewProject(applyProjectRules({...newProject, deliveryDate}));
+                      }}
+                      className={inputClass}
+                    />
                   </FormField>
 
                   <FormField label="Data Replanejada">
@@ -711,30 +770,66 @@ export default function App() {
                     </FormField>
                   </div>
 
-                  <FormField label="Fase">
-                    <select value={editingProject.phase} onChange={(e) => setEditingProject({...editingProject, phase: e.target.value})} className={inputClass}>
-                      {['Backlog', 'Briefing', 'Desenvolvimento', 'Escopo', 'Homologação Cliente', 'Concluído', 'Protótipo', 'Valoração'].map(f => <option key={f} value={f}>{f}</option>)}
+                  <FormField label="Status">
+                    <select
+                      value={editingProject.status}
+                      onChange={(e) => {
+                        const status = e.target.value;
+                        let phase = editingProject.phase;
+                        if (status === 'Backlog') phase = 'Backlog';
+                        else if (status === 'Concluído') phase = 'Concluído';
+                        else if (phase === 'Backlog' || phase === 'Concluído') phase = 'Briefing';
+                        setEditingProject(applyProjectRules({...editingProject, status, phase}) as Project);
+                      }}
+                      className={inputClass}
+                    >
+                      {ALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </FormField>
 
-                  <FormField label="Status">
-                    <select value={editingProject.status} onChange={(e) => setEditingProject({...editingProject, status: e.target.value})} className={inputClass}>
-                      {['Backlog', 'Concluído', 'Em andamento', 'Pausado', 'Impedimento'].map(s => <option key={s} value={s}>{s}</option>)}
+                  <FormField label="Fase">
+                    <select
+                      value={editingProject.phase}
+                      onChange={(e) => setEditingProject({...editingProject, phase: e.target.value})}
+                      className={inputClass}
+                      disabled={editingProject.status === 'Backlog' || editingProject.status === 'Concluído'}
+                    >
+                      {ALL_PHASES.filter(f => {
+                        if (editingProject.status === 'Backlog') return f === 'Backlog';
+                        if (editingProject.status === 'Concluído') return f === 'Concluído';
+                        return f !== 'Backlog' && f !== 'Concluído';
+                      }).map(f => <option key={f} value={f}>{f}</option>)}
                     </select>
                   </FormField>
 
                   <FormField label="Farol">
                     <select value={editingProject.farol} onChange={(e) => setEditingProject({...editingProject, farol: e.target.value})} className={inputClass}>
-                      {['No prazo', 'Atrasado (Cliente)', 'Atrasado (TradeUp)', 'Concluído'].map(f => <option key={f} value={f}>{f}</option>)}
+                      {ALL_FAROL.map(f => <option key={f} value={f}>{f}</option>)}
                     </select>
                   </FormField>
 
                   <FormField label="Data Base (Baseline)">
-                    <input placeholder="DD/MM/AAAA" value={editingProject.baseline} onChange={(e) => setEditingProject({...editingProject, baseline: maskDate(e.target.value)})} className={inputClass} />
+                    <input
+                      placeholder="DD/MM/AAAA"
+                      value={editingProject.baseline}
+                      onChange={(e) => {
+                        const baseline = maskDate(e.target.value);
+                        setEditingProject(applyProjectRules({...editingProject, baseline}) as Project);
+                      }}
+                      className={inputClass}
+                    />
                   </FormField>
 
                   <FormField label="Data de Entrega">
-                    <input placeholder="DD/MM/AAAA" value={editingProject.deliveryDate} onChange={(e) => setEditingProject({...editingProject, deliveryDate: maskDate(e.target.value)})} className={inputClass} />
+                    <input
+                      placeholder="DD/MM/AAAA"
+                      value={editingProject.deliveryDate}
+                      onChange={(e) => {
+                        const deliveryDate = maskDate(e.target.value);
+                        setEditingProject(applyProjectRules({...editingProject, deliveryDate}) as Project);
+                      }}
+                      className={inputClass}
+                    />
                   </FormField>
 
                   <FormField label="Data Replanejada">

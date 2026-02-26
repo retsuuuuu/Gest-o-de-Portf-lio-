@@ -21,6 +21,7 @@ import {
   ArrowDownRight
 } from 'lucide-react';
 import { Project } from '../types';
+import { ALL_PHASES, ALL_STATUS, ALL_FAROL } from '../constants';
 
 const AnalyticsCard = ({ title, value, change, isPositive, icon: Icon }: any) => (
   <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
@@ -46,30 +47,20 @@ export const AnalyticsModule = ({ projectsData, onSegmentClick }: { projectsData
     concluidos: projectsData.filter(p => (p.status || '').toLowerCase() === 'concluído').length,
   };
 
-  const statusData = [
-    { name: 'Em andamento', value: projectsData.filter(p => (p.status || '').toLowerCase() === 'em andamento').length },
-    { name: 'Pausado', value: projectsData.filter(p => (p.status || '').toLowerCase() === 'pausado').length },
-    { name: 'Impedimento', value: projectsData.filter(p => (p.status || '').toLowerCase() === 'impedimento').length },
-    { name: 'Concluído', value: projectsData.filter(p => (p.status || '').toLowerCase() === 'concluído').length },
-    { name: 'Backlog', value: projectsData.filter(p => (p.status || '').toLowerCase() === 'backlog').length },
-  ].filter(d => d.value > 0);
+  const statusData = ALL_STATUS.map(s => ({
+    name: s,
+    value: projectsData.filter(p => (p.status || '').toLowerCase() === s.toLowerCase()).length
+  })).filter(d => d.value > 0);
 
-  const farolData = [
-    { name: 'No prazo', value: projectsData.filter(p => (p.farol || '').toLowerCase() === 'no prazo').length },
-    { name: 'Atrasado (Cliente)', value: projectsData.filter(p => (p.farol || '').toLowerCase() === 'atrasado (cliente)').length },
-    { name: 'Atrasado (TradeUp)', value: projectsData.filter(p => (p.farol || '').toLowerCase() === 'atrasado (tradeup)').length },
-    { name: 'Concluído', value: projectsData.filter(p => (p.farol || '').toLowerCase() === 'concluído').length },
-  ].filter(d => d.value > 0);
+  const farolData = ALL_FAROL.map(f => ({
+    name: f,
+    value: projectsData.filter(p => (p.farol || '').toLowerCase() === f.toLowerCase()).length
+  })).filter(d => d.value > 0);
 
-  const phaseData = [
-    { name: 'Backlog', value: projectsData.filter(p => (p.phase || '').toLowerCase() === 'backlog').length },
-    { name: 'Briefing', value: projectsData.filter(p => (p.phase || '').toLowerCase() === 'briefing').length },
-    { name: 'Desenvolvimento', value: projectsData.filter(p => (p.phase || '').toLowerCase() === 'desenvolvimento').length },
-    { name: 'Escopo', value: projectsData.filter(p => (p.phase || '').toLowerCase() === 'escopo').length },
-    { name: 'Homologação', value: projectsData.filter(p => (p.phase || '').toLowerCase() === 'homologação cliente').length },
-    { name: 'Protótipo', value: projectsData.filter(p => (p.phase || '').toLowerCase() === 'protótipo').length },
-    { name: 'Valoração', value: projectsData.filter(p => (p.phase || '').toLowerCase() === 'valoração').length },
-  ].filter(d => d.value > 0);
+  const phaseData = ALL_PHASES.map(ph => ({
+    name: ph,
+    value: projectsData.filter(p => (p.phase || '').toLowerCase() === ph.toLowerCase()).length
+  })).filter(d => d.value > 0);
 
   const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b', '#10b981', '#3b82f6'];
 

@@ -146,7 +146,7 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, onBack, 
                 <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-bold uppercase tracking-widest rounded-full">{project.type}</span>
                 <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-widest rounded-full">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Active Report
+                  Relatório Ativo
                 </div>
               </div>
               <h1 className="text-5xl font-bold text-slate-900 tracking-tight leading-none">{project.name}</h1>
@@ -162,7 +162,7 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, onBack, 
               <p className="text-xl font-bold text-slate-900">{project.code}</p>
             </div>
             <div className="space-y-1 border-x border-slate-100 px-10">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Data de Baseline</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Data Base (Baseline)</p>
               <p className="text-xl font-bold text-slate-900">{project.baseline || 'Não definida'}</p>
             </div>
             <div className="space-y-1 pl-10">
