@@ -36,10 +36,11 @@ app.get('/api/users', async (req, res) => {
 
     console.log(`Total users fetched: ${users.length}`);
 
-    // Filter by role in public_metadata
+    // Filter by role in public_metadata (case-insensitive check for robustness)
     const filtered = users.filter(user => {
       const userRole = user.public_metadata?.role;
-      return userRole === role;
+      if (!userRole || !role) return false;
+      return String(userRole).toLowerCase() === String(role).toLowerCase();
     });
 
     console.log(`Filtered users: ${filtered.length}`);

@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 import { 
   LayoutDashboard, BarChart3, Search, Bell, Settings, Plus,
   AlertCircle, CheckCircle2, Clock, Filter, PauseCircle, ShieldAlert,
@@ -8,20 +7,23 @@ import {
 import { useUser, SignedIn, SignedOut, SignIn, UserButton } from '@clerk/clerk-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Project } from './types';
-import { AnalyticsModule } from './components/AnalyticsModule';
-import { NotificationsModal } from './components/NotificationsModal';
-import { SettingsModal } from './components/SettingsModal';
+
+// Lazy load heavy components
+const AnalyticsModule = lazy(() => import('./components/AnalyticsModule').then(m => ({ default: m.AnalyticsModule })));
+const NotificationsModal = lazy(() => import('./components/NotificationsModal').then(m => ({ default: m.NotificationsModal })));
+const SettingsModal = lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
+const ProjectDetailsView = lazy(() => import('./components/ProjectDetailsView').then(m => ({ default: m.ProjectDetailsView })));
 
 const API_URL = "https://script.google.com/macros/s/AKfycby5yox4sLMdyQzzSq4wLwphOts9qRP39vpkHerEs29l8i0dFvfdaMDhRrOIX1DTan5gDg/exec";
 
-const SidebarItem = ({ icon: Icon, label, active = false, onClick }: { icon: any, label: string, active?: boolean, onClick?: () => void }) => (
+const SidebarItem = React.memo(({ icon: Icon, label, active = false, onClick }: { icon: any, label: string, active?: boolean, onClick?: () => void }) => (
   <div onClick={onClick} className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all ${active ? 'bg-indigo-50 text-indigo-600 font-medium' : 'text-slate-500 hover:bg-slate-50'}`}>
     <Icon size={20} />
     <span className="text-sm">{label}</span>
   </div>
-);
+));
 
-const StatCard = ({ label, value, icon: Icon, color, onClick }: { label: string, value: string | number, icon: any, color: string, onClick?: () => void }) => (
+const StatCard = React.memo(({ label, value, icon: Icon, color, onClick }: { label: string, value: string | number, icon: any, color: string, onClick?: () => void }) => (
   <div onClick={onClick} className={`bg-white p-7 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full ${onClick ? 'cursor-pointer hover:border-indigo-200' : ''}`}>
     <div className="flex justify-between items-start mb-4">
       <div className={`p-2.5 rounded-xl ${color} shadow-lg shadow-current/10`}>
@@ -33,16 +35,16 @@ const StatCard = ({ label, value, icon: Icon, color, onClick }: { label: string,
       <p className="text-3xl font-bold text-slate-900 tracking-tight">{value}</p>
     </div>
   </div>
-);
+));
 
-const FormField = ({ label, children }: { label: string, children: React.ReactNode }) => (
+const FormField = React.memo(({ label, children }: { label: string, children: React.ReactNode }) => (
   <div className="flex flex-col gap-2">
     <div className="min-h-[20px] flex items-end">
       <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider leading-none">{label}</label>
     </div>
     {children}
   </div>
-);
+));
 
 const inputClass = "w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all placeholder:text-slate-400";
 
@@ -69,7 +71,7 @@ const formatToDDMMYYYY = (dateStr: string) => {
   }
 };
 
-const StatusBadge = ({ status }: { status: string }) => {
+const StatusBadge = React.memo(({ status }: { status: string }) => {
   const getStyles = () => {
     switch (status?.toLowerCase()) {
       case 'em andamento': return 'bg-blue-50 text-blue-600 border-blue-100';
@@ -80,9 +82,9 @@ const StatusBadge = ({ status }: { status: string }) => {
     }
   };
   return <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${getStyles()}`}>{status || 'N/A'}</span>;
-};
+});
 
-const FarolIndicator = ({ farol }: { farol: string }) => {
+const FarolIndicator = React.memo(({ farol }: { farol: string }) => {
   const getColor = () => {
     const f = farol?.toLowerCase() || '';
     if (f.includes('atrasado')) return 'bg-rose-500';
@@ -96,265 +98,7 @@ const FarolIndicator = ({ farol }: { farol: string }) => {
       <span className="text-xs text-slate-600">{farol || 'N/A'}</span>
     </div>
   );
-};
-
-const TeamMemberSelector = ({ label, role, currentMember, onSelect }: { label: string, role: string, currentMember?: string, onSelect: (name: string) => void }) => {
-  const [users, setUsers] = useState<{id: string, name: string}[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    if (isOpen && users.length === 0) {
-      fetchUsers();
-    }
-  }, [isOpen]);
-
-  const fetchUsers = async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch(`/api/users?role=${role}`);
-      const data = await res.json();
-      setUsers(data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <div className="relative group">
-      <div className="flex items-center justify-between mb-1">
-        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</label>
-      </div>
-      <div
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-indigo-200 cursor-pointer transition-all"
-      >
-        <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[10px] font-bold text-slate-400 border border-slate-100 shadow-sm">
-          {currentMember ? currentMember.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?'}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-slate-900 truncate">{currentMember || 'Not assigned'}</p>
-        </div>
-        <Plus size={14} className={`text-slate-400 transition-transform ${isOpen ? 'rotate-45' : ''}`} />
-      </div>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-xl shadow-xl z-20 max-h-48 overflow-y-auto"
-          >
-            {isLoading ? (
-              <div className="p-4 text-center text-xs text-slate-400">Loading...</div>
-            ) : users.length > 0 ? (
-              users.map(u => (
-                <div
-                  key={u.id}
-                  onClick={() => { onSelect(u.name); setIsOpen(false); }}
-                  className="px-4 py-2 text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer transition-colors"
-                >
-                  {u.name}
-                </div>
-              ))
-            ) : (
-              <div className="p-4 text-center text-xs text-slate-400">No {role} users found</div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-const ProjectDetailsView = ({ project, onBack, onEdit, onPartialUpdate }: { project: Project, onBack: () => void, onEdit: () => void, onPartialUpdate: (field: string, value: string) => void }) => {
-  return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Header & Breadcrumbs */}
-      <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button onClick={onBack} className="flex items-center gap-2 text-indigo-600 font-bold text-xs uppercase tracking-widest hover:bg-indigo-50 px-3 py-2 rounded-lg transition-all">
-              <ArrowLeft size={16} />
-              Dashboard
-            </button>
-            <div className="h-6 w-px bg-slate-200 mx-2" />
-            <div className="flex items-center gap-2">
-              <LayoutDashboard size={20} className="text-indigo-600" />
-              <h2 className="font-bold text-slate-900">Project Details</h2>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg"><Bell size={20}/></button>
-            <button className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg"><Settings size={20}/></button>
-          </div>
-        </div>
-
-        <nav className="flex text-[11px] font-bold uppercase tracking-widest text-slate-400 gap-2 items-center">
-          <span>Workspace</span>
-          <span className="text-slate-300">›</span>
-          <span>Active Projects</span>
-          <span className="text-slate-300">›</span>
-          <span className="text-indigo-600">{project.initiative}</span>
-        </nav>
-      </div>
-
-      {/* Main Info Card */}
-      <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-10">
-          <div className="flex justify-between items-start mb-8">
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-bold uppercase tracking-widest rounded-full">{project.type}</span>
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-widest rounded-full">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Active Report
-                </div>
-              </div>
-              <h1 className="text-5xl font-bold text-slate-900 tracking-tight leading-none">{project.name}</h1>
-            </div>
-            <button onClick={onEdit} className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
-              <Pencil size={18} /> Edit Project
-            </button>
-          </div>
-
-          <div className="grid grid-cols-3 border-t border-slate-100 pt-8 mt-4">
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Project Code</p>
-              <p className="text-xl font-bold text-slate-900">{project.code}</p>
-            </div>
-            <div className="space-y-1 border-x border-slate-100 px-10">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Baseline Date</p>
-              <p className="text-xl font-bold text-slate-900">{project.baseline || 'Not set'}</p>
-            </div>
-            <div className="space-y-1 pl-10">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Replanning Date</p>
-              <p className="text-xl font-bold text-slate-900">{project.replannedDate || 'No replanning'}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column */}
-        <div className="lg:col-span-2 space-y-8">
-          <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-10 space-y-8">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-bold text-slate-900">Project Description</h3>
-              <button onClick={onEdit} className="text-indigo-600 font-bold text-xs uppercase tracking-widest hover:underline">Update</button>
-            </div>
-            <p className="text-slate-500 leading-relaxed text-base">
-              {project.description || project.report || "No description provided for this project yet."}
-            </p>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-50 p-6 rounded-2xl flex items-center gap-4 border border-slate-100">
-                <div className="p-3 bg-white rounded-xl shadow-sm"><Search size={20} className="text-indigo-600" /></div>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Location</p>
-                  <p className="text-sm font-bold text-slate-900">{project.location || 'Remote / General'}</p>
-                </div>
-              </div>
-              <div className="bg-slate-50 p-6 rounded-2xl flex items-center gap-4 border border-slate-100">
-                <div className="p-3 bg-white rounded-xl shadow-sm"><BarChart3 size={20} className="text-indigo-600" /></div>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Allocated Budget</p>
-                  <p className="text-sm font-bold text-slate-900">{project.budget || 'TBD'}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-10 space-y-8">
-            <h3 className="text-xl font-bold text-slate-900">Current Status Highlights</h3>
-            <div className="space-y-6">
-              <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-indigo-100 transition-all">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl"><Save size={20} /></div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">Phase: {project.phase}</p>
-                    <p className="text-xs text-slate-500">Current progress in the delivery cycle</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                   <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-indigo-600 rounded-full" style={{ width: project.status === 'Concluído' ? '100%' : '65%' }} />
-                   </div>
-                   <CheckCircle2 size={20} className={project.status === 'Concluído' ? "text-emerald-500" : "text-slate-300"} />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-indigo-100 transition-all">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-amber-50 text-amber-600 rounded-xl"><Clock size={20} /></div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">Status: {project.status}</p>
-                    <p className="text-xs text-slate-500">Updated status of daily operations</p>
-                  </div>
-                </div>
-                <StatusBadge status={project.status} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column */}
-        <div className="space-y-8">
-          <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-8 space-y-6">
-            <h3 className="text-base font-bold text-slate-900">Project Team</h3>
-            <div className="space-y-6">
-               <TeamMemberSelector
-                label="Product Owner"
-                role="P.O"
-                currentMember={project.po}
-                onSelect={(name) => onPartialUpdate('PO', name)}
-               />
-               <TeamMemberSelector
-                label="UX Designer"
-                role="UX"
-                currentMember={project.ux}
-                onSelect={(name) => onPartialUpdate('UX', name)}
-               />
-               <TeamMemberSelector
-                label="QA Engineer"
-                role="QA"
-                currentMember={project.qa}
-                onSelect={(name) => onPartialUpdate('QA', name)}
-               />
-               <TeamMemberSelector
-                label="Lead Developer"
-                role="TI"
-                currentMember={project.ti}
-                onSelect={(name) => onPartialUpdate('TI', name)}
-               />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-8 space-y-6">
-            <h3 className="text-base font-bold text-slate-900">Resources</h3>
-            <div className="space-y-4">
-              <a href="#" className="flex items-center gap-3 text-slate-600 hover:text-indigo-600 transition-colors group">
-                <Calendar size={18} className="text-slate-400 group-hover:text-indigo-600" />
-                <span className="text-sm font-medium">Infrastructure Guidelines</span>
-              </a>
-              <a href="#" className="flex items-center gap-3 text-slate-600 hover:text-indigo-600 transition-colors group">
-                <Save size={18} className="text-slate-400 group-hover:text-indigo-600" />
-                <span className="text-sm font-medium">Shared Drive Folder</span>
-              </a>
-              <a href="#" className="flex items-center gap-3 text-slate-600 hover:text-indigo-600 transition-colors group">
-                <Clock size={18} className="text-slate-400 group-hover:text-indigo-600" />
-                <span className="text-sm font-medium">Archive Logs</span>
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+});
 
 export default function App() {
   const { user } = useUser();
@@ -381,29 +125,7 @@ export default function App() {
   const [listModalTitle, setListModalTitle] = useState('');
   const [listModalProjects, setListModalProjects] = useState<Project[]>([]);
 
-  useEffect(() => {
-    fetchProjects();
-  }, []);
-
-  useEffect(() => {
-    if (user && !user.publicMetadata?.role) {
-      initUserRole(user.id);
-    }
-  }, [user]);
-
-  const initUserRole = async (userId: string) => {
-    try {
-      await fetch('/api/init-user-role', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
-      });
-    } catch (e) {
-      console.error("Erro ao inicializar role do usuário:", e);
-    }
-  };
-
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     try {
       const response = await fetch(API_URL);
       const data = await response.json();
@@ -435,9 +157,31 @@ export default function App() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const handleSaveProject = async (projectToSave: Partial<Project>, isEdit: boolean) => {
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
+
+  const initUserRole = useCallback(async (userId: string) => {
+    try {
+      await fetch('/api/init-user-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+    } catch (e) {
+      console.error("Erro ao inicializar role do usuário:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user && !user.publicMetadata?.role) {
+      initUserRole(user.id);
+    }
+  }, [user, initUserRole]);
+
+  const handleSaveProject = useCallback(async (projectToSave: Partial<Project>, isEdit: boolean) => {
     setIsSaving(true);
     const code = projectToSave.code || `C${Math.floor(Math.random() * 90000) + 10000}`;
     
@@ -486,9 +230,9 @@ export default function App() {
     } finally {
       setIsSaving(false);
     }
-  };
+  }, []);
 
-  const handlePartialUpdate = async (projectCode: string, field: string, value: string) => {
+  const handlePartialUpdate = useCallback(async (projectCode: string, field: string, value: string) => {
     const payload = {
       action: "update",
       payload: {
@@ -511,15 +255,18 @@ export default function App() {
         p.code === projectCode ? { ...p, [fieldKey]: value } : p
       ));
 
-      if (selectedProject?.code === projectCode) {
-        setSelectedProject(prev => prev ? { ...prev, [fieldKey]: value } : null);
-      }
+      setSelectedProject(prev => {
+        if (prev?.code === projectCode) {
+          return { ...prev, [fieldKey]: value };
+        }
+        return prev;
+      });
     } catch (error) {
       console.error("Erro no update parcial:", error);
     }
-  };
+  }, []);
 
-  const handleDeleteProject = async (project: Project) => {
+  const handleDeleteProject = useCallback(async (project: Project) => {
     if (!window.confirm(`Tem a certeza que deseja eliminar o projeto "${project.name}"?`)) return;
 
     setIsSaving(true);
@@ -544,7 +291,28 @@ export default function App() {
     } finally {
       setIsSaving(false);
     }
-  };
+  }, []);
+
+  const filteredProjects = useMemo(() => projectsData.filter(p =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.initiative.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.code.toLowerCase().includes(searchQuery.toLowerCase())
+  ), [projectsData, searchQuery]);
+
+  const stats = useMemo(() => ({
+    atrasados: projectsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')).length,
+    emAndamento: projectsData.filter(p => (p.status || '').toLowerCase() === 'em andamento').length,
+    pausados: projectsData.filter(p => (p.status || '').toLowerCase() === 'pausado').length,
+    impedimento: projectsData.filter(p => (p.status || '').toLowerCase() === 'impedimento').length,
+    concluidos: projectsData.filter(p => (p.status || '').toLowerCase() === 'concluído').length,
+  }), [projectsData]);
+
+  const handleOpenListModal = useCallback((title: string, projects: Project[]) => {
+    setListModalTitle(title);
+    setListModalProjects(projects);
+    setIsListModalOpen(true);
+  }, []);
 
   if (isLoading) {
     return (
@@ -556,27 +324,6 @@ export default function App() {
       </div>
     );
   }
-
-  const filteredProjects = projectsData.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.initiative.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.code.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const stats = {
-    atrasados: projectsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')).length,
-    emAndamento: projectsData.filter(p => (p.status || '').toLowerCase() === 'em andamento').length,
-    pausados: projectsData.filter(p => (p.status || '').toLowerCase() === 'pausado').length,
-    impedimento: projectsData.filter(p => (p.status || '').toLowerCase() === 'impedimento').length,
-    concluidos: projectsData.filter(p => (p.status || '').toLowerCase() === 'concluído').length,
-  };
-
-  const handleOpenListModal = (title: string, projects: Project[]) => {
-    setListModalTitle(title);
-    setListModalProjects(projects);
-    setIsListModalOpen(true);
-  };
 
   return (
     <>
@@ -635,12 +382,14 @@ export default function App() {
 
         <div className="flex-1 overflow-y-auto p-8 space-y-8">
           {view === 'details' && selectedProject ? (
-            <ProjectDetailsView
-              project={selectedProject}
-              onBack={() => setView('dashboard')}
-              onEdit={() => { setEditingProject(selectedProject); setIsEditOpen(true); }}
-              onPartialUpdate={(field, value) => handlePartialUpdate(selectedProject.code, field, value)}
-            />
+            <Suspense fallback={<div className="flex items-center justify-center p-20"><div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>}>
+              <ProjectDetailsView
+                project={selectedProject}
+                onBack={() => setView('dashboard')}
+                onEdit={() => { setEditingProject(selectedProject); setIsEditOpen(true); }}
+                onPartialUpdate={(field, value) => handlePartialUpdate(selectedProject.code, field, value)}
+              />
+            </Suspense>
           ) : activeTab === 'Visão Geral' ? (
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -744,7 +493,9 @@ export default function App() {
               </section>
             </>
           ) : (
-            <AnalyticsModule projectsData={projectsData} onSegmentClick={handleOpenListModal} />
+            <Suspense fallback={<div className="flex items-center justify-center p-20"><div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>}>
+              <AnalyticsModule projectsData={projectsData} onSegmentClick={handleOpenListModal} />
+            </Suspense>
           )}
         </div>
       </main>
@@ -971,14 +722,16 @@ export default function App() {
         )}
 
       </AnimatePresence>
-      <NotificationsModal
-        isOpen={isNotificationsOpen}
-        onClose={() => setIsNotificationsOpen(false)}
-      />
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-      />
+      <Suspense fallback={null}>
+        <NotificationsModal
+          isOpen={isNotificationsOpen}
+          onClose={() => setIsNotificationsOpen(false)}
+        />
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+        />
+      </Suspense>
         </div>
       </SignedIn>
     </>
