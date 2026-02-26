@@ -4,7 +4,7 @@ import {
   Pencil, Save, Calendar, ArrowLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Project } from '../types';
+import { Project, TeamData } from '../types';
 
 const StatusBadge = React.memo(({ status }: { status: string }) => {
   const getStyles = () => {
@@ -19,29 +19,8 @@ const StatusBadge = React.memo(({ status }: { status: string }) => {
   return <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${getStyles()}`}>{status || 'N/A'}</span>;
 });
 
-const TeamMemberSelector = React.memo(({ label, role, currentMember, onSelect }: { label: string, role: string, currentMember?: string, onSelect: (name: string) => void }) => {
-  const [users, setUsers] = useState<{id: string, name: string}[]>([]);
+const TeamMemberSelector = React.memo(({ label, role, currentMember, onSelect, availableMembers = [] }: { label: string, role: string, currentMember?: string, onSelect: (name: string) => void, availableMembers?: string[] }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    if (isOpen && users.length === 0) {
-      fetchUsers();
-    }
-  }, [isOpen]);
-
-  const fetchUsers = async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch(`/api/users?role=${role}`);
-      const data = await res.json();
-      setUsers(data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="relative group">
@@ -67,22 +46,20 @@ const TeamMemberSelector = React.memo(({ label, role, currentMember, onSelect }:
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-xl shadow-xl z-20 max-h-48 overflow-y-auto"
+            className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-xl shadow-xl z-20 max-h-48 overflow-y-auto custom-scrollbar"
           >
-            {isLoading ? (
-              <div className="p-4 text-center text-xs text-slate-400">Loading...</div>
-            ) : users.length > 0 ? (
-              users.map(u => (
+            {availableMembers.length > 0 ? (
+              availableMembers.map(name => (
                 <div
-                  key={u.id}
-                  onClick={() => { onSelect(u.name); setIsOpen(false); }}
+                  key={name}
+                  onClick={() => { onSelect(name); setIsOpen(false); }}
                   className="px-4 py-2 text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer transition-colors"
                 >
-                  {u.name}
+                  {name}
                 </div>
               ))
             ) : (
-              <div className="p-4 text-center text-xs text-slate-400">No {role} users found</div>
+              <div className="p-4 text-center text-xs text-slate-400">Nenhum profissional ({role}) encontrado</div>
             )}
           </motion.div>
         )}
@@ -91,7 +68,20 @@ const TeamMemberSelector = React.memo(({ label, role, currentMember, onSelect }:
   );
 });
 
-export const ProjectDetailsView = React.memo(({ project, onBack, onEdit, onPartialUpdate }: { project: Project, onBack: () => void, onEdit: () => void, onPartialUpdate: (field: string, value: string) => void }) => {
+export const ProjectDetailsView = React.memo(({ project, availableTeam, onBack, onEdit, onPartialUpdate, onRegisterMember }: { project: Project, availableTeam: TeamData, onBack: () => void, onEdit: () => void, onPartialUpdate: (field: string, value: string) => void, onRegisterMember: (name: string, role: string) => void }) => {
+  const [isAddingMember, setIsAddingMember] = useState(false);
+  const [newMemberName, setNewMemberName] = useState('');
+  const [newMemberRole, setNewMemberRole] = useState('UX');
+
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newMemberName.trim()) {
+      onRegisterMember(newMemberName, newMemberRole);
+      setNewMemberName('');
+      setIsAddingMember(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header & Breadcrumbs */}
@@ -225,30 +215,43 @@ export const ProjectDetailsView = React.memo(({ project, onBack, onEdit, onParti
         {/* Right Column */}
         <div className="space-y-8">
           <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-8 space-y-6">
-            <h3 className="text-base font-bold text-slate-900">Project Team</h3>
+            <div className="flex justify-between items-center">
+              <h3 className="text-base font-bold text-slate-900">Project Team</h3>
+              <button
+                onClick={() => setIsAddingMember(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-100 transition-colors"
+              >
+                <Plus size={12} />
+                Adicionar Novo
+              </button>
+            </div>
             <div className="space-y-6">
                <TeamMemberSelector
                 label="Product Owner"
                 role="P.O"
                 currentMember={project.po}
+                availableMembers={availableTeam["P.O"]}
                 onSelect={(name) => onPartialUpdate('PO', name)}
                />
                <TeamMemberSelector
                 label="UX Designer"
                 role="UX"
                 currentMember={project.ux}
+                availableMembers={availableTeam["UX"]}
                 onSelect={(name) => onPartialUpdate('UX', name)}
                />
                <TeamMemberSelector
                 label="QA Engineer"
                 role="QA"
                 currentMember={project.qa}
+                availableMembers={availableTeam["QA"]}
                 onSelect={(name) => onPartialUpdate('QA', name)}
                />
                <TeamMemberSelector
                 label="Lead Developer"
                 role="TI"
                 currentMember={project.ti}
+                availableMembers={availableTeam["TI"]}
                 onSelect={(name) => onPartialUpdate('TI', name)}
                />
             </div>
@@ -273,6 +276,67 @@ export const ProjectDetailsView = React.memo(({ project, onBack, onEdit, onParti
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {isAddingMember && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-slate-900">Registar Profissional</h2>
+                <button onClick={() => setIsAddingMember(false)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-50 rounded-full">
+                  <ArrowLeft size={20} className="rotate-90" />
+                </button>
+              </div>
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nome Completo</label>
+                  <input
+                    autoFocus
+                    required
+                    placeholder="Ex: João Silva"
+                    value={newMemberName}
+                    onChange={(e) => setNewMemberName(e.target.value)}
+                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Função / Cargo</label>
+                  <select
+                    value={newMemberRole}
+                    onChange={(e) => setNewMemberRole(e.target.value)}
+                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                  >
+                    <option value="P.O">Product Owner (P.O)</option>
+                    <option value="UX">UX Designer</option>
+                    <option value="QA">QA Engineer</option>
+                    <option value="TI">Lead Developer (TI)</option>
+                  </select>
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingMember(false)}
+                    className="flex-1 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 rounded-xl transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"
+                  >
+                    Registar
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 });

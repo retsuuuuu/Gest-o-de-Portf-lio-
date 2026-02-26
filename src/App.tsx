@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useUser, SignedIn, SignedOut, SignIn, UserButton } from '@clerk/clerk-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Project } from './types';
+import { Project, TeamData } from './types';
 
 // Lazy load heavy components
 const AnalyticsModule = lazy(() => import('./components/AnalyticsModule').then(m => ({ default: m.AnalyticsModule })));
@@ -14,7 +14,7 @@ const NotificationsModal = lazy(() => import('./components/NotificationsModal').
 const SettingsModal = lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
 const ProjectDetailsView = lazy(() => import('./components/ProjectDetailsView').then(m => ({ default: m.ProjectDetailsView })));
 
-const API_URL = "https://script.google.com/macros/s/AKfycby5yox4sLMdyQzzSq4wLwphOts9qRP39vpkHerEs29l8i0dFvfdaMDhRrOIX1DTan5gDg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyv5qevsFfNZMQkgPTu2mQyxNRPTyrYrk-rbtx21SZsA_k3Qcbn43e-NspniNjooKh7VQ/exec";
 
 const SidebarItem = React.memo(({ icon: Icon, label, active = false, onClick }: { icon: any, label: string, active?: boolean, onClick?: () => void }) => (
   <div onClick={onClick} className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all ${active ? 'bg-indigo-50 text-indigo-600 font-medium' : 'text-slate-500 hover:bg-slate-50'}`}>
@@ -114,6 +114,16 @@ export default function App() {
       return [];
     }
   });
+
+  const [teamData, setTeamData] = useState<TeamData>(() => {
+    try {
+      const saved = localStorage.getItem('tradeup_team_cache');
+      return saved ? JSON.parse(saved) : { "P.O": [], "UX": [], "QA": [], "TI": [] };
+    } catch {
+      return { "P.O": [], "UX": [], "QA": [], "TI": [] };
+    }
+  });
+
   const [isLoading, setIsLoading] = useState(projectsData.length === 0);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -145,7 +155,10 @@ export default function App() {
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
       const data = await response.json();
-      const mapped: Project[] = data.map((row: any, i: number) => ({
+      const projects = data.projetos || [];
+      const team = data.equipeDisponivel || { "P.O": [], "UX": [], "QA": [], "TI": [] };
+
+      const mapped: Project[] = projects.map((row: any, i: number) => ({
         id: String(i),
         type: row['TIPO PROJETO'] || '',
         initiative: row['INICIATIVA'] || '',
@@ -169,7 +182,9 @@ export default function App() {
       }));
 
       setProjectsData(mapped);
+      setTeamData(team);
       localStorage.setItem('tradeup_projects_cache', JSON.stringify(mapped));
+      localStorage.setItem('tradeup_team_cache', JSON.stringify(team));
     } catch (error: any) {
       console.error("Erro ao carregar dados", error);
       if (error.name === 'AbortError') {
@@ -286,6 +301,43 @@ export default function App() {
       });
     } catch (error) {
       console.error("Erro no update parcial:", error);
+    }
+  }, []);
+
+  const handleRegisterMember = useCallback(async (name: string, role: string) => {
+    setIsSaving(true);
+    const payload = {
+      action: "addProfessional",
+      payload: {
+        "NOME": name,
+        "FUNCAO": role
+      }
+    };
+
+    try {
+      await fetch(API_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+
+      // Optimistic Update
+      setTeamData(prev => {
+        const newTeam = { ...prev };
+        const roleKey = role as keyof TeamData;
+        if (newTeam[roleKey]) {
+          if (!newTeam[roleKey].includes(name)) {
+            newTeam[roleKey] = [...newTeam[roleKey], name];
+          }
+        }
+        localStorage.setItem('tradeup_team_cache', JSON.stringify(newTeam));
+        return newTeam;
+      });
+    } catch (error) {
+      console.error("Erro ao registar membro:", error);
+    } finally {
+      setIsSaving(false);
     }
   }, []);
 
@@ -428,9 +480,11 @@ export default function App() {
             <Suspense fallback={<div className="flex items-center justify-center p-20"><div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>}>
               <ProjectDetailsView
                 project={selectedProject}
+                availableTeam={teamData}
                 onBack={() => setView('dashboard')}
                 onEdit={() => { setEditingProject(selectedProject); setIsEditOpen(true); }}
                 onPartialUpdate={(field, value) => handlePartialUpdate(selectedProject.code, field, value)}
+                onRegisterMember={handleRegisterMember}
               />
             </Suspense>
           ) : activeTab === 'Visão Geral' ? (

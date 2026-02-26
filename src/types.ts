@@ -2,6 +2,13 @@ export type ProjectPhase = 'Backlog' | 'Briefing' | 'Desenvolvimento' | 'Escopo'
 export type ProjectStatus = 'Backlog' | 'Concluído' | 'Em andamento' | 'Pausado' | 'Impedimento';
 export type ProjectFarol = 'No prazo' | 'Atrasado (Cliente)' | 'Atrasado (TradeUp)' | 'Concluído';
 
+export interface TeamData {
+  "P.O": string[];
+  "UX": string[];
+  "QA": string[];
+  "TI": string[];
+}
+
 export interface Project {
   id: string;
   type: string;
