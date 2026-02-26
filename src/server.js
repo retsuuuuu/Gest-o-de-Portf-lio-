@@ -15,13 +15,19 @@ if (!CLERK_SECRET_KEY) {
 app.get('/api/users', async (req, res) => {
   const { role } = req.query;
   console.log(`Fetching users for role: ${role}`);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+
   try {
     const response = await fetch('https://api.clerk.com/v1/users', {
+      signal: controller.signal,
       headers: {
         'Authorization': `Bearer ${CLERK_SECRET_KEY}`,
         'Content-Type': 'application/json'
       }
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
         const err = await response.text();

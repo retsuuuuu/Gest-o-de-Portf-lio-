@@ -106,8 +106,16 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('Visão Geral');
   const [searchQuery, setSearchQuery] = useState('');
   
-  const [projectsData, setProjectsData] = useState<Project[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [projectsData, setProjectsData] = useState<Project[]>(() => {
+    try {
+      const saved = localStorage.getItem('tradeup_projects_cache');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [isLoading, setIsLoading] = useState(projectsData.length === 0);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -126,8 +134,16 @@ export default function App() {
   const [listModalProjects, setListModalProjects] = useState<Project[]>([]);
 
   const fetchProjects = useCallback(async () => {
+    setFetchError(null);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
+
     try {
-      const response = await fetch(API_URL);
+      const response = await fetch(API_URL, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
       const data = await response.json();
       const mapped: Project[] = data.map((row: any, i: number) => ({
         id: String(i),
@@ -151,9 +167,16 @@ export default function App() {
         qa: row['QA'] || '',
         ti: row['TI'] || '',
       }));
+
       setProjectsData(mapped);
-    } catch (error) {
+      localStorage.setItem('tradeup_projects_cache', JSON.stringify(mapped));
+    } catch (error: any) {
       console.error("Erro ao carregar dados", error);
+      if (error.name === 'AbortError') {
+        setFetchError("A ligação expirou. Por favor, verifique a sua internet.");
+      } else {
+        setFetchError("Não foi possível carregar os dados. Tente novamente.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -300,13 +323,16 @@ export default function App() {
     p.code.toLowerCase().includes(searchQuery.toLowerCase())
   ), [projectsData, searchQuery]);
 
-  const stats = useMemo(() => ({
-    atrasados: projectsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')).length,
-    emAndamento: projectsData.filter(p => (p.status || '').toLowerCase() === 'em andamento').length,
-    pausados: projectsData.filter(p => (p.status || '').toLowerCase() === 'pausado').length,
-    impedimento: projectsData.filter(p => (p.status || '').toLowerCase() === 'impedimento').length,
-    concluidos: projectsData.filter(p => (p.status || '').toLowerCase() === 'concluído').length,
-  }), [projectsData]);
+  const stats = useMemo(() => {
+    if (!projectsData.length) return { atrasados: 0, emAndamento: 0, pausados: 0, impedimento: 0, concluidos: 0 };
+    return {
+      atrasados: projectsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')).length,
+      emAndamento: projectsData.filter(p => (p.status || '').toLowerCase() === 'em andamento').length,
+      pausados: projectsData.filter(p => (p.status || '').toLowerCase() === 'pausado').length,
+      impedimento: projectsData.filter(p => (p.status || '').toLowerCase() === 'impedimento').length,
+      concluidos: projectsData.filter(p => (p.status || '').toLowerCase() === 'concluído').length,
+    };
+  }, [projectsData]);
 
   const handleOpenListModal = useCallback((title: string, projects: Project[]) => {
     setListModalTitle(title);
@@ -316,10 +342,27 @@ export default function App() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-500 font-bold tracking-widest text-sm uppercase">A sincronizar Base de Dados...</p>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6 text-center">
+        <div className="space-y-6 max-w-xs">
+          {!fetchError ? (
+            <>
+              <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+              <p className="text-slate-500 font-bold tracking-widest text-xs uppercase">A sincronizar Base de Dados...</p>
+            </>
+          ) : (
+            <>
+              <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-2">
+                <AlertCircle size={24} />
+              </div>
+              <p className="text-slate-900 font-bold">{fetchError}</p>
+              <button
+                onClick={() => { setIsLoading(true); fetchProjects(); }}
+                className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-100"
+              >
+                Tentar Novamente
+              </button>
+            </>
+          )}
         </div>
       </div>
     );
