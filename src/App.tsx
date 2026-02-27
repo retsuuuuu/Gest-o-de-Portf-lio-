@@ -87,16 +87,16 @@ const MultiSelect = React.memo(({ label, options, selected, onChange }: { label:
   );
 });
 
-const StatCard = React.memo(({ label, value, icon: Icon, color, onClick }: { label: string, value: string | number, icon: any, color: string, onClick?: () => void }) => (
-  <div onClick={onClick} className={`bg-white p-7 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full ${onClick ? 'cursor-pointer hover:border-indigo-200' : ''}`}>
+const StatCard = React.memo(({ label, value, icon: Icon, color, onClick, variant = 'light' }: { label: string, value: string | number, icon: any, color: string, onClick?: () => void, variant?: 'light' | 'dark' }) => (
+  <div onClick={onClick} className={`${variant === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'} p-7 rounded-2xl border ${variant === 'dark' ? 'border-slate-800' : 'border-slate-100'} shadow-sm hover:shadow-md transition-shadow flex flex-col h-full ${onClick ? 'cursor-pointer hover:border-indigo-200' : ''}`}>
     <div className="flex justify-between items-start mb-4">
       <div className={`p-2.5 rounded-xl ${color} shadow-lg shadow-current/10`}>
         <Icon size={24} className="text-white" />
       </div>
     </div>
     <div className="flex-1 flex flex-col justify-between">
-      <h3 className="text-slate-500 text-[13px] font-bold uppercase tracking-wider mb-2 min-h-[32px] flex items-center leading-tight">{label}</h3>
-      <p className="text-5xl font-extrabold text-slate-900 tracking-tight">{value}</p>
+      <h3 className={`${variant === 'dark' ? 'text-slate-400' : 'text-slate-500'} text-[13px] font-bold uppercase tracking-wider mb-2 min-h-[32px] flex items-center leading-tight`}>{label}</h3>
+      <p className={`text-5xl font-extrabold ${variant === 'dark' ? 'text-white' : 'text-slate-900'} tracking-tight`}>{value}</p>
     </div>
   </div>
 ));
@@ -604,9 +604,16 @@ export default function App() {
                 <motion.div
                     animate={stats.atrasados > 0 ? { scale: [1, 1.05, 1] } : {}}
                     transition={{ duration: 1.5, repeat: Infinity }}
-                    className={`h-full rounded-2xl transition-all ${stats.atrasados > 0 ? 'ring-4 ring-rose-500 ring-offset-4 shadow-[0_0_30px_rgba(244,63,94,0.4)]' : ''}`}
+                      className={`h-full rounded-2xl transition-all ${stats.atrasados > 0 ? 'ring-4 ring-rose-500 ring-offset-4 shadow-[0_0_40px_rgba(244,63,94,0.5)]' : ''}`}
                 >
-                  <StatCard label="PROJETOS ATRASADOS" value={stats.atrasados} icon={AlertCircle} color="bg-rose-500" onClick={() => handleOpenListModal("Projetos Atrasados", filteredData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')))} />
+                    <StatCard
+                      label="PROJETOS ATRASADOS"
+                      value={stats.atrasados}
+                      icon={AlertCircle}
+                      color="bg-rose-500"
+                      variant="dark"
+                      onClick={() => handleOpenListModal("Projetos Atrasados", filteredData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')))}
+                    />
                 </motion.div>
                 <StatCard label="PROJETOS EM ANDAMENTO" value={stats.emAndamento} icon={Clock} color="bg-blue-500" onClick={() => handleOpenListModal("Projetos em Andamento", filteredData.filter(p => (p.status || '').toLowerCase() === 'em andamento'))} />
                 <StatCard label="PROJETOS PAUSADOS" value={stats.pausados} icon={PauseCircle} color="bg-amber-500" onClick={() => handleOpenListModal("Projetos Pausados", filteredData.filter(p => (p.status || '').toLowerCase() === 'pausado'))} />
@@ -620,49 +627,95 @@ export default function App() {
                   <MultiSelect label="Cliente" options={uniqueClients} selected={clientFilter} onChange={setClientFilter} />
                 </div>
 
-              <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+              <section className="space-y-6">
+                <div className="flex items-center justify-between">
                   <div>
-                      <h2 className="text-2xl font-bold text-slate-900">Gestão de Projetos</h2>
-                      <p className="text-base text-slate-500 font-medium">Acompanhe e gerencie suas iniciativas</p>
+                    <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Portfólio de Clientes</h2>
+                    <p className="text-sm text-slate-500 font-medium">Visualização organizada por organização e iniciativa</p>
                   </div>
-                  <button onClick={() => setIsCreateOpen(true)} className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors">
-                    <Plus size={16} /> Novo Projeto
+                  <button onClick={() => setIsCreateOpen(true)} className="flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
+                    <Plus size={18} /> Novo Projeto
                   </button>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50/50 border-b border-slate-100 text-[13px] uppercase tracking-wider text-slate-500">
-                        <th className="px-8 py-6 font-bold">Projeto</th>
-                        <th className="px-8 py-6 font-bold">Fase</th>
-                        <th className="px-8 py-6 font-bold">Status</th>
-                        <th className="px-8 py-6 font-bold">Farol</th>
-                        <th className="px-8 py-6 font-bold text-right">Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {filteredData.map((project) => (
-                        <tr key={project.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-8 py-6 cursor-pointer group" onClick={() => { setSelectedProject(project); setView('detalhes'); }}>
-                            <p className="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight mb-1">{project.name}</p>
-                            <p className="text-[13px] text-slate-500 font-semibold uppercase tracking-wide">{project.code} <span className="mx-2 opacity-30">•</span> {project.client || project.initiative}</p>
-                          </td>
-                          <td className="px-8 py-6 text-base font-medium text-slate-600">{project.phase}</td>
-                          <td className="px-8 py-6"><StatusBadge status={project.status} /></td>
-                          <td className="px-8 py-6"><FarolIndicator farol={project.farol} /></td>
-                          <td className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <button onClick={() => { setEditingProject(project); setIsEditOpen(true); }} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"><Pencil size={16} /></button>
-                              <button onClick={() => handleDeleteProject(project)} disabled={deletingProjectId === project.id} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg disabled:opacity-50">
-                                {deletingProjectId === project.id ? <div className="w-4 h-4 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" /> : <Trash2 size={16} />}
-                              </button>
+
+                <div className="space-y-8">
+                  {Object.entries(
+                    filteredData.reduce((acc, p) => {
+                      const client = p.client || 'Outros / Interno';
+                      if (!acc[client]) acc[client] = [];
+                      acc[client].push(p);
+                      return acc;
+                    }, {} as Record<string, Project[]>)
+                  ).sort(([a], [b]) => a.localeCompare(b)).map(([client, projectsList]) => {
+                    const projects = projectsList as Project[];
+                    return (
+                    <div key={client} className="space-y-4">
+                      <div className="flex items-center gap-4 px-2">
+                        <div className="h-px flex-1 bg-slate-200" />
+                        <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">{client}</h3>
+                        <div className="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold text-slate-500">{projects.length}</div>
+                        <div className="h-px flex-1 bg-slate-200" />
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-4">
+                        {projects.map((project: Project) => (
+                          <div
+                            key={project.id}
+                            onClick={() => { setSelectedProject(project); setView('detalhes'); }}
+                            className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all cursor-pointer group relative overflow-hidden"
+                          >
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                              <div className="flex-1 space-y-2">
+                                <div className="flex items-center gap-3">
+                                  <h4 className="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{project.name}</h4>
+                                  <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-50 text-slate-400 rounded border border-slate-100 uppercase">{project.code}</span>
+                                </div>
+                                <p className="text-sm text-slate-500 font-medium line-clamp-1">{project.initiative}</p>
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-4 md:gap-8">
+                                <div className="space-y-1 min-w-[120px]">
+                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fase Atual</p>
+                                  <p className="text-sm font-bold text-slate-700">{project.phase}</p>
+                                </div>
+                                <div className="space-y-1 min-w-[120px]">
+                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</p>
+                                  <StatusBadge status={project.status} />
+                                </div>
+                                <div className="space-y-1 min-w-[120px]">
+                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Farol</p>
+                                  <FarolIndicator farol={project.farol} />
+                                </div>
+
+                                <div className="flex items-center gap-2 md:ml-4 border-l border-slate-100 pl-4">
+                                  <button onClick={(e) => { e.stopPropagation(); setEditingProject(project); setIsEditOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Pencil size={18} /></button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteProject(project); }}
+                                    disabled={deletingProjectId === project.id}
+                                    className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                  >
+                                    {deletingProjectId === project.id ? <div className="w-4 h-4 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" /> : <Trash2 size={18} />}
+                                  </button>
+                                </div>
+                              </div>
                             </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                            {project.farol.toLowerCase().includes('atrasado') && (
+                              <div className="absolute top-0 left-0 w-1 h-full bg-rose-500" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )})}
+                  {filteredData.length === 0 && (
+                    <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-slate-200">
+                      <div className="w-16 h-16 bg-slate-50 text-slate-300 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <Search size={32} />
+                      </div>
+                      <h3 className="text-lg font-bold text-slate-900 mb-1">Nenhum projeto encontrado</h3>
+                      <p className="text-slate-500 max-w-xs mx-auto">Tente ajustar seus filtros ou pesquisar por outro termo.</p>
+                    </div>
+                  )}
                 </div>
               </section>
             </>
