@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Filter, X } from 'lucide-react';
 import { 
   BarChart, 
   Bar, 
@@ -23,6 +25,68 @@ import {
 } from 'lucide-react';
 import { Project } from '../types';
 
+const MultiSelect = React.memo(({ label, options, selected, onChange }: { label: string, options: string[], selected: string[], onChange: (vals: string[]) => void }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setIsOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const toggleOption = (opt: string) => {
+    if (opt === 'Todos') {
+      onChange(['Todos']);
+      return;
+    }
+    const next = selected.includes(opt)
+      ? selected.filter(s => s !== opt)
+      : [...selected.filter(s => s !== 'Todos'), opt];
+    onChange(next.length === 0 ? ['Todos'] : next);
+  };
+
+  return (
+    <div className="space-y-2 relative" ref={containerRef}>
+      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{label}</label>
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium flex justify-between items-center cursor-pointer hover:border-indigo-200 transition-all"
+      >
+        <span className="truncate max-w-[120px]">
+          {selected.includes('Todos') ? 'Todos' : selected.join(', ')}
+        </span>
+        <Filter size={14} className="text-slate-400" />
+      </div>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-xl shadow-xl p-3 max-h-64 overflow-y-auto custom-scrollbar min-w-[200px]"
+          >
+            {options.map(opt => (
+              <label key={opt} className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={selected.includes(opt)}
+                  onChange={() => toggleOption(opt)}
+                  className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="text-sm font-medium text-slate-700 group-hover:text-indigo-600 transition-colors">{opt}</span>
+              </label>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+});
+
 const AnalyticsCard = ({ title, value, change, isPositive, icon: Icon }: any) => (
   <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
     <div className="flex justify-between items-start mb-4">
@@ -40,36 +104,56 @@ const AnalyticsCard = ({ title, value, change, isPositive, icon: Icon }: any) =>
 );
 
 export const AnalyticsModule = ({ projectsData, onSegmentClick }: { projectsData: Project[], onSegmentClick?: (title: string, projects: Project[]) => void }) => {
-  const stats = {
-    total: projectsData.length,
-    atrasados: projectsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')).length,
-    emAndamento: projectsData.filter(p => (p.status || '').toLowerCase() === 'em andamento').length,
-    concluidos: projectsData.filter(p => (p.status || '').toLowerCase() === 'concluído').length,
-  };
+  const [statusFilter, setStatusFilter] = useState<string[]>(['Todos']);
+  const [farolFilter, setFarolFilter] = useState<string[]>(['Todos']);
+  const [clientFilter, setClientFilter] = useState<string[]>(['Todos']);
 
-  const statusData = [
-    { name: 'Backlog', value: projectsData.filter(p => p.status === 'Backlog').length, projects: projectsData.filter(p => p.status === 'Backlog') },
-    { name: 'Em andamento', value: projectsData.filter(p => p.status === 'Em andamento').length, projects: projectsData.filter(p => p.status === 'Em andamento') },
-    { name: 'Pausado', value: projectsData.filter(p => p.status === 'Pausado').length, projects: projectsData.filter(p => p.status === 'Pausado') },
-    { name: 'Impedimento', value: projectsData.filter(p => p.status === 'Impedimento').length, projects: projectsData.filter(p => p.status === 'Impedimento') },
-    { name: 'Concluído', value: projectsData.filter(p => p.status === 'Concluído').length, projects: projectsData.filter(p => p.status === 'Concluído') },
-  ].filter(d => d.value > 0);
+  const ALL_STATUS = ['Backlog', 'Concluído', 'Em andamento', 'Pausado', 'Impedimento'];
+  const ALL_FAROL = ['No prazo', 'Atrasado (Cliente)', 'Atrasado (TradeUp)', 'Concluído', 'Atrasado'];
+  const uniqueClients = useMemo(() => {
+    const clients = new Set(projectsData.map(p => p.client).filter(Boolean));
+    return ['Todos', ...Array.from(clients).sort()];
+  }, [projectsData]);
 
-  const farolData = [
-    { name: 'No prazo', value: projectsData.filter(p => p.farol === 'No prazo').length, projects: projectsData.filter(p => p.farol === 'No prazo') },
-    { name: 'Atrasado', value: projectsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')).length, projects: projectsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')) },
-    { name: 'Concluído', value: projectsData.filter(p => p.farol === 'Concluído').length, projects: projectsData.filter(p => p.farol === 'Concluído') },
-  ].filter(d => d.value > 0);
+  const filteredAnalyticsData = useMemo(() => {
+    return projectsData.filter(p => {
+      const matchesStatus = statusFilter.includes('Todos') || statusFilter.includes(p.status);
+      const matchesFarol = farolFilter.includes('Todos') || farolFilter.includes(p.farol);
+      const matchesClient = clientFilter.includes('Todos') || clientFilter.includes(p.client);
+      return matchesStatus && matchesFarol && matchesClient;
+    });
+  }, [projectsData, statusFilter, farolFilter, clientFilter]);
 
-  const phaseData = [
-    { name: 'Backlog', value: projectsData.filter(p => p.phase === 'Backlog').length, projects: projectsData.filter(p => p.phase === 'Backlog') },
-    { name: 'Briefing', value: projectsData.filter(p => p.phase === 'Briefing').length, projects: projectsData.filter(p => p.phase === 'Briefing') },
-    { name: 'Desenvolvimento', value: projectsData.filter(p => p.phase === 'Desenvolvimento').length, projects: projectsData.filter(p => p.phase === 'Desenvolvimento') },
-    { name: 'Escopo', value: projectsData.filter(p => p.phase === 'Escopo').length, projects: projectsData.filter(p => p.phase === 'Escopo') },
-    { name: 'Homologação', value: projectsData.filter(p => p.phase === 'Homologação Cliente').length, projects: projectsData.filter(p => p.phase === 'Homologação Cliente') },
-    { name: 'Protótipo', value: projectsData.filter(p => p.phase === 'Protótipo').length, projects: projectsData.filter(p => p.phase === 'Protótipo') },
-    { name: 'Valoração', value: projectsData.filter(p => p.phase === 'Valoração').length, projects: projectsData.filter(p => p.phase === 'Valoração') },
-  ].filter(d => d.value > 0);
+  const stats = useMemo(() => ({
+    total: filteredAnalyticsData.length,
+    atrasados: filteredAnalyticsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')).length,
+    emAndamento: filteredAnalyticsData.filter(p => (p.status || '').toLowerCase() === 'em andamento').length,
+    concluidos: filteredAnalyticsData.filter(p => (p.status || '').toLowerCase() === 'concluído').length,
+  }), [filteredAnalyticsData]);
+
+  const statusData = useMemo(() => [
+    { name: 'Backlog', value: filteredAnalyticsData.filter(p => p.status === 'Backlog').length, projects: filteredAnalyticsData.filter(p => p.status === 'Backlog') },
+    { name: 'Em andamento', value: filteredAnalyticsData.filter(p => p.status === 'Em andamento').length, projects: filteredAnalyticsData.filter(p => p.status === 'Em andamento') },
+    { name: 'Pausado', value: filteredAnalyticsData.filter(p => p.status === 'Pausado').length, projects: filteredAnalyticsData.filter(p => p.status === 'Pausado') },
+    { name: 'Impedimento', value: filteredAnalyticsData.filter(p => p.status === 'Impedimento').length, projects: filteredAnalyticsData.filter(p => p.status === 'Impedimento') },
+    { name: 'Concluído', value: filteredAnalyticsData.filter(p => p.status === 'Concluído').length, projects: filteredAnalyticsData.filter(p => p.status === 'Concluído') },
+  ].filter(d => d.value > 0), [filteredAnalyticsData]);
+
+  const farolData = useMemo(() => [
+    { name: 'No prazo', value: filteredAnalyticsData.filter(p => p.farol === 'No prazo').length, projects: filteredAnalyticsData.filter(p => p.farol === 'No prazo') },
+    { name: 'Atrasado', value: filteredAnalyticsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')).length, projects: filteredAnalyticsData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')) },
+    { name: 'Concluído', value: filteredAnalyticsData.filter(p => p.farol === 'Concluído').length, projects: filteredAnalyticsData.filter(p => p.farol === 'Concluído') },
+  ].filter(d => d.value > 0), [filteredAnalyticsData]);
+
+  const phaseData = useMemo(() => [
+    { name: 'Backlog', value: filteredAnalyticsData.filter(p => p.phase === 'Backlog').length, projects: filteredAnalyticsData.filter(p => p.phase === 'Backlog') },
+    { name: 'Briefing', value: filteredAnalyticsData.filter(p => p.phase === 'Briefing').length, projects: filteredAnalyticsData.filter(p => p.phase === 'Briefing') },
+    { name: 'Desenvolvimento', value: filteredAnalyticsData.filter(p => p.phase === 'Desenvolvimento').length, projects: filteredAnalyticsData.filter(p => p.phase === 'Desenvolvimento') },
+    { name: 'Escopo', value: filteredAnalyticsData.filter(p => p.phase === 'Escopo').length, projects: filteredAnalyticsData.filter(p => p.phase === 'Escopo') },
+    { name: 'Homologação', value: filteredAnalyticsData.filter(p => p.phase === 'Homologação Cliente').length, projects: filteredAnalyticsData.filter(p => p.phase === 'Homologação Cliente') },
+    { name: 'Protótipo', value: filteredAnalyticsData.filter(p => p.phase === 'Protótipo').length, projects: filteredAnalyticsData.filter(p => p.phase === 'Protótipo') },
+    { name: 'Valoração', value: filteredAnalyticsData.filter(p => p.phase === 'Valoração').length, projects: filteredAnalyticsData.filter(p => p.phase === 'Valoração') },
+  ].filter(d => d.value > 0), [filteredAnalyticsData]);
 
   const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#f43f5e', '#64748b', '#8b5cf6', '#ec4899'];
 
@@ -82,9 +166,24 @@ export const AnalyticsModule = ({ projectsData, onSegmentClick }: { projectsData
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-2xl font-bold text-slate-900">Análises Quantitativas</h2>
-        <p className="text-slate-500">Visão numérica e distribuição do portfólio de projetos</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-2xl font-bold text-slate-900">Análises Quantitativas</h2>
+          <p className="text-slate-500">Visão numérica e distribuição do portfólio de projetos</p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+          <MultiSelect label="Status" options={['Todos', ...ALL_STATUS]} selected={statusFilter} onChange={setStatusFilter} />
+          <MultiSelect label="Farol" options={['Todos', ...ALL_FAROL]} selected={farolFilter} onChange={setFarolFilter} />
+          <MultiSelect label="Cliente" options={uniqueClients} selected={clientFilter} onChange={setClientFilter} />
+          <button
+            onClick={() => { setStatusFilter(['Todos']); setFarolFilter(['Todos']); setClientFilter(['Todos']); }}
+            className="self-end mb-1 p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+            title="Limpar Filtros"
+          >
+            <X size={18} />
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

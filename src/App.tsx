@@ -25,6 +25,68 @@ const SidebarItem = React.memo(({ icon: Icon, label, active = false, onClick }: 
   </div>
 ));
 
+const MultiSelect = React.memo(({ label, options, selected, onChange }: { label: string, options: string[], selected: string[], onChange: (vals: string[]) => void }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setIsOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const toggleOption = (opt: string) => {
+    if (opt === 'Todos') {
+      onChange(['Todos']);
+      return;
+    }
+    const next = selected.includes(opt)
+      ? selected.filter(s => s !== opt)
+      : [...selected.filter(s => s !== 'Todos'), opt];
+    onChange(next.length === 0 ? ['Todos'] : next);
+  };
+
+  return (
+    <div className="space-y-3 relative" ref={containerRef}>
+      <label className="text-[13px] font-bold text-slate-500 uppercase tracking-widest">{label}</label>
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-base font-medium flex justify-between items-center cursor-pointer hover:border-indigo-200 transition-all"
+      >
+        <span className="truncate max-w-[150px]">
+          {selected.includes('Todos') ? `Todos (${options.length - 1})` : selected.join(', ')}
+        </span>
+        <Filter size={16} className="text-slate-400" />
+      </div>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-xl shadow-xl p-4 max-h-64 overflow-y-auto custom-scrollbar"
+          >
+            {options.map(opt => (
+              <label key={opt} className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={selected.includes(opt)}
+                  onChange={() => toggleOption(opt)}
+                  className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="text-sm font-medium text-slate-700 group-hover:text-indigo-600 transition-colors">{opt}</span>
+              </label>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+});
+
 const StatCard = React.memo(({ label, value, icon: Icon, color, onClick }: { label: string, value: string | number, icon: any, color: string, onClick?: () => void }) => (
   <div onClick={onClick} className={`bg-white p-7 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full ${onClick ? 'cursor-pointer hover:border-indigo-200' : ''}`}>
     <div className="flex justify-between items-start mb-4">
@@ -147,9 +209,9 @@ export default function App() {
   const [view, setView] = useState<'dashboard' | 'detalhes'>('dashboard');
   const [activeTab, setActiveTab] = useState('Visão Geral');
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('Todos');
-  const [farolFilter, setFarolFilter] = useState('Todos');
-  const [clientFilter, setClientFilter] = useState('Todos');
+  const [statusFilter, setStatusFilter] = useState<string[]>(['Todos']);
+  const [farolFilter, setFarolFilter] = useState<string[]>(['Todos']);
+  const [clientFilter, setClientFilter] = useState<string[]>(['Todos']);
   
   const [projectsData, setProjectsData] = useState<Project[]>(() => {
     try {
@@ -409,9 +471,9 @@ export default function App() {
         p.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.code.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesStatus = statusFilter === 'Todos' || p.status === statusFilter;
-      const matchesFarol = farolFilter === 'Todos' || p.farol === farolFilter;
-      const matchesClient = clientFilter === 'Todos' || p.client === clientFilter;
+      const matchesStatus = statusFilter.includes('Todos') || statusFilter.includes(p.status);
+      const matchesFarol = farolFilter.includes('Todos') || farolFilter.includes(p.farol);
+      const matchesClient = clientFilter.includes('Todos') || clientFilter.includes(p.client);
 
       return matchesSearch && matchesStatus && matchesFarol && matchesClient;
     });
@@ -540,9 +602,9 @@ export default function App() {
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                 <motion.div
-                  animate={stats.atrasados > 0 ? { scale: [1, 1.02, 1], boxShadow: ["0px 0px 0px rgba(244, 63, 94, 0)", "0px 0px 20px rgba(244, 63, 94, 0.3)", "0px 0px 0px rgba(244, 63, 94, 0)"] } : {}}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className={`h-full rounded-2xl transition-all ${stats.atrasados > 0 ? 'ring-2 ring-rose-500 ring-offset-2' : ''}`}
+                    animate={stats.atrasados > 0 ? { scale: [1, 1.05, 1] } : {}}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                    className={`h-full rounded-2xl transition-all ${stats.atrasados > 0 ? 'ring-4 ring-rose-500 ring-offset-4 shadow-[0_0_30px_rgba(244,63,94,0.4)]' : ''}`}
                 >
                   <StatCard label="PROJETOS ATRASADOS" value={stats.atrasados} icon={AlertCircle} color="bg-rose-500" onClick={() => handleOpenListModal("Projetos Atrasados", filteredData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')))} />
                 </motion.div>
@@ -553,27 +615,10 @@ export default function App() {
               </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-                  <div className="space-y-3">
-                    <label className="text-[13px] font-bold text-slate-500 uppercase tracking-widest">Status</label>
-                    <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-base font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none">
-                    <option value="Todos">Todos os Status</option>
-                    {ALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                  <MultiSelect label="Status" options={['Todos', ...ALL_STATUS]} selected={statusFilter} onChange={setStatusFilter} />
+                  <MultiSelect label="Farol" options={['Todos', ...ALL_FAROL]} selected={farolFilter} onChange={setFarolFilter} />
+                  <MultiSelect label="Cliente" options={uniqueClients} selected={clientFilter} onChange={setClientFilter} />
                 </div>
-                  <div className="space-y-3">
-                    <label className="text-[13px] font-bold text-slate-500 uppercase tracking-widest">Farol</label>
-                    <select value={farolFilter} onChange={(e) => setFarolFilter(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-base font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none">
-                    <option value="Todos">Todos os Faróis</option>
-                    {ALL_FAROL.map(f => <option key={f} value={f}>{f}</option>)}
-                  </select>
-                </div>
-                  <div className="space-y-3">
-                    <label className="text-[13px] font-bold text-slate-500 uppercase tracking-widest">Cliente</label>
-                    <select value={clientFilter} onChange={(e) => setClientFilter(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-base font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none">
-                    {uniqueClients.map(c => <option key={c} value={c}>{c === 'Todos' ? 'Todos os Clientes' : c}</option>)}
-                  </select>
-                </div>
-              </div>
 
               <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                   <div className="p-8 border-b border-slate-100 flex items-center justify-between">
@@ -623,7 +668,7 @@ export default function App() {
             </>
           ) : (
             <Suspense fallback={<div className="flex-1 flex items-center justify-center min-h-[400px]"><div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>}>
-              <AnalyticsModule projectsData={filteredData} onSegmentClick={handleOpenListModal} />
+              <AnalyticsModule projectsData={projectsData} onSegmentClick={handleOpenListModal} />
             </Suspense>
           )}
         </div>
