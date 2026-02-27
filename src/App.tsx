@@ -672,8 +672,8 @@ export default function App() {
                     <select value={newProject.farol} onChange={(e) => setNewProject({...newProject, farol: e.target.value})} className={inputClass}>{ALL_FAROL.map(f => <option key={f} value={f}>{f}</option>)}</select>
                   </FormField>
                   <FormField label="Data Base (Baseline)"><input placeholder="DD/MM/AAAA" value={newProject.baseline} onChange={(e) => setNewProject(applyProjectRules({...newProject, baseline: maskDate(e.target.value)}))} className={inputClass} /></FormField>
-                  <FormField label="Data de Entrega"><input placeholder="DD/MM/AAAA" value={newProject.deliveryDate} onChange={(e) => setNewProject(applyProjectRules({...newProject, deliveryDate: maskDate(e.target.value)}))} className={inputClass} /></FormField>
                   <FormField label="Data Replanejada"><input placeholder="DD/MM/AAAA" value={newProject.replannedDate} onChange={(e) => setNewProject({...newProject, replannedDate: maskDate(e.target.value)})} className={inputClass} /></FormField>
+                  <FormField label="Data de Entrega"><input placeholder="DD/MM/AAAA" value={newProject.deliveryDate} onChange={(e) => setNewProject(applyProjectRules({...newProject, deliveryDate: maskDate(e.target.value)}))} className={inputClass} /></FormField>
                   <div className="md:col-span-2">
                     <FormField label="Descrição do Projeto"><textarea rows={3} placeholder="Descrição detalhada do projeto..." value={newProject.description} onChange={(e) => setNewProject({...newProject, description: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
                   </div>
@@ -733,8 +733,8 @@ export default function App() {
                     <select value={editingProject.farol} onChange={(e) => setEditingProject({...editingProject, farol: e.target.value})} className={inputClass}>{ALL_FAROL.map(f => <option key={f} value={f}>{f}</option>)}</select>
                   </FormField>
                   <FormField label="Data Base (Baseline)"><input placeholder="DD/MM/AAAA" value={editingProject.baseline} onChange={(e) => setEditingProject(applyProjectRules({...editingProject, baseline: maskDate(e.target.value)}) as Project)} className={inputClass} /></FormField>
-                  <FormField label="Data de Entrega"><input placeholder="DD/MM/AAAA" value={editingProject.deliveryDate} onChange={(e) => setEditingProject(applyProjectRules({...editingProject, deliveryDate: maskDate(e.target.value)}) as Project)} className={inputClass} /></FormField>
                   <FormField label="Data Replanejada"><input placeholder="DD/MM/AAAA" value={editingProject.replannedDate} onChange={(e) => setEditingProject({...editingProject, replannedDate: maskDate(e.target.value)})} className={inputClass} /></FormField>
+                  <FormField label="Data de Entrega"><input placeholder="DD/MM/AAAA" value={editingProject.deliveryDate} onChange={(e) => setEditingProject(applyProjectRules({...editingProject, deliveryDate: maskDate(e.target.value)}) as Project)} className={inputClass} /></FormField>
                   <div className="md:col-span-2">
                     <FormField label="Descrição do Projeto"><textarea rows={3} value={editingProject.description} onChange={(e) => setEditingProject({...editingProject, description: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
                   </div>

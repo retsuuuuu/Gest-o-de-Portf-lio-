@@ -153,18 +153,26 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, isSaving
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 border-t border-slate-100 pt-8 mt-4 gap-6 sm:gap-0">
+          <div className="grid grid-cols-2 md:grid-cols-5 border-t border-slate-100 pt-8 mt-4 gap-6 md:gap-0">
             <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Código do Projeto</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Código</p>
               <p className="text-xl font-bold text-slate-900">{project.code}</p>
             </div>
-            <div className="space-y-1 sm:border-x sm:border-slate-100 sm:px-10">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Data Base (Baseline)</p>
-              <p className="text-xl font-bold text-slate-900">{project.baseline || 'Não definida'}</p>
+            <div className="space-y-1 md:border-x md:border-slate-100 md:px-8">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cliente</p>
+              <p className="text-xl font-bold text-slate-900 truncate" title={project.client}>{project.client || 'N/A'}</p>
             </div>
-            <div className="space-y-1 sm:pl-10">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Data de Replanejamento</p>
-              <p className="text-xl font-bold text-slate-900">{project.replannedDate || 'Sem replanejamento'}</p>
+            <div className="space-y-1 md:border-x md:border-slate-100 md:px-8">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Baseline</p>
+              <p className="text-xl font-bold text-slate-900">{project.baseline || '---'}</p>
+            </div>
+            <div className="space-y-1 md:border-x md:border-slate-100 md:px-8">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Replan.</p>
+              <p className="text-xl font-bold text-slate-900">{project.replannedDate || '---'}</p>
+            </div>
+            <div className="space-y-1 md:pl-8">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Entrega</p>
+              <p className="text-xl font-bold text-slate-900">{project.deliveryDate || '---'}</p>
             </div>
           </div>
         </div>
@@ -178,8 +186,22 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, isSaving
               <button onClick={onEdit} className="text-indigo-600 font-bold text-xs uppercase tracking-widest hover:underline">Atualizar</button>
             </div>
             <p className="text-slate-500 leading-relaxed text-base">
-              {project.description || project.report || "Nenhuma descrição fornecida para este projeto ainda."}
+              {project.description || "Nenhuma descrição fornecida para este projeto ainda."}
             </p>
+          </div>
+
+          <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-5 sm:p-10 space-y-8">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-bold text-slate-900">Status Report</h3>
+              <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                <Clock size={20} />
+              </div>
+            </div>
+            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
+              <p className="text-slate-700 leading-relaxed text-base whitespace-pre-wrap">
+                {project.report || "Nenhum relatório de status disponível no momento."}
+              </p>
+            </div>
           </div>
 
           <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-10 space-y-8">
