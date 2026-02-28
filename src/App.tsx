@@ -91,26 +91,25 @@ const MultiSelect = React.memo(({ label, options, selected, onChange }: { label:
 const StatCard = React.memo(({ label, value, icon: Icon, color, onClick, variant = 'light', delayedCount = 0 }: { label: string, value: string | number, icon: any, color: string, onClick?: () => void, variant?: 'light' | 'rose', delayedCount?: number }) => (
   <div
     onClick={onClick}
-    className={`p-5 rounded-2xl border transition-all flex flex-col h-full relative group
+    className={`p-4 rounded-2xl border transition-all flex flex-col h-full relative group
       ${variant === 'rose'
         ? 'bg-rose-50 border-rose-100 shadow-sm'
         : 'bg-white border-slate-100 shadow-sm hover:border-indigo-200'}
       ${onClick ? 'cursor-pointer' : ''}`}
   >
-    <div className="flex items-center justify-between mb-5">
-      <div className="flex items-center gap-3">
-        <div className={`p-2 rounded-lg ${variant === 'rose' ? 'bg-rose-500 text-white shadow-md' : 'bg-slate-50 text-slate-400 border border-slate-100'}`}>
-          <Icon size={18} />
+    <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center gap-2">
+        <div className={`p-1.5 rounded-lg ${variant === 'rose' ? 'bg-rose-500 text-white shadow-md' : 'bg-slate-50 text-slate-400 border border-slate-100'}`}>
+          <Icon size={16} />
         </div>
-        <h3 className={`${variant === 'rose' ? 'text-rose-800' : 'text-slate-500'} text-xs font-bold`}>{label}</h3>
+        <h3 className={`${variant === 'rose' ? 'text-rose-800' : 'text-slate-500'} text-[10px] font-black uppercase tracking-wider`}>{label}</h3>
       </div>
-      <Info size={14} className="text-slate-300" />
     </div>
 
-    <div className="flex items-end gap-3">
-      <p className={`text-3xl font-bold ${variant === 'rose' ? 'text-rose-600' : 'text-slate-900'} tracking-tight`}>{value}</p>
+    <div className="flex items-end justify-between mt-auto">
+      <p className={`text-2xl font-black ${variant === 'rose' ? 'text-rose-600' : 'text-slate-900'} tracking-tight leading-none`}>{value}</p>
       {delayedCount > 0 && (
-        <div className="flex items-center gap-1 px-2 py-0.5 bg-rose-100 text-rose-600 rounded-md text-[10px] font-black border border-rose-200 mb-1 animate-pulse">
+        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-rose-100 text-rose-600 rounded-md text-[9px] font-black border border-rose-200 animate-pulse">
           <Clock size={10} strokeWidth={3} />
           {delayedCount}
         </div>
@@ -706,35 +705,37 @@ export default function App() {
                       </div>
 
                       <div className="bg-slate-50/50 rounded-[2.5rem] p-3 space-y-3 border border-slate-100">
-                        <div className="hidden md:grid grid-cols-12 gap-6 px-6 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-slate-400">
-                          <div className="col-span-4">Projeto / Iniciativa</div>
+                        <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-slate-400">
+                          <div className="col-span-3">Projeto / Iniciativa</div>
                           <div className="col-span-2">Fase</div>
                           <div className="col-span-2">Status</div>
                           <div className="col-span-2">Farol</div>
-                          <div className="col-span-2 text-right">Ações</div>
+                          <div className="col-span-1">Entrega</div>
+                          <div className="col-span-1">P.O</div>
+                          <div className="col-span-1 text-right">Ações</div>
                         </div>
 
                         {projects.map((project: Project) => (
                           <div
                             key={project.id}
                             onClick={() => { setSelectedProject(project); setView('detalhes'); }}
-                            className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all cursor-pointer group relative overflow-hidden"
+                            className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all cursor-pointer group relative overflow-hidden"
                           >
-                            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                              <div className="md:col-span-4 space-y-1">
-                                <div className="flex items-center gap-3">
-                                  <h4 className="text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-none">{project.name}</h4>
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-[9px] font-bold px-1.5 py-0.5 bg-slate-50 text-slate-400 rounded border border-slate-100 uppercase">{project.code}</span>
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                              <div className="md:col-span-3 space-y-0.5">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{project.name}</h4>
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <span className="text-[8px] font-bold px-1 py-0.5 bg-slate-50 text-slate-400 rounded border border-slate-100 uppercase">{project.code}</span>
                                     {project.priority && project.priority !== 'Normal' && <PriorityIcon priority={project.priority} />}
                                   </div>
                                 </div>
-                                <p className="text-xs text-slate-400 font-medium line-clamp-1">{project.initiative}</p>
+                                <p className="text-[11px] text-slate-400 font-medium line-clamp-1">{project.initiative}</p>
                               </div>
 
                               <div className="md:col-span-2">
                                 <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Fase</p>
-                                <p className="text-sm font-semibold text-slate-600 truncate">{project.phase}</p>
+                                <p className="text-[13px] font-semibold text-slate-600 truncate">{project.phase}</p>
                               </div>
                               <div className="md:col-span-2">
                                 <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Status</p>
@@ -745,14 +746,26 @@ export default function App() {
                                 <FarolIndicator farol={project.farol} />
                               </div>
 
-                                <div className="md:col-span-2 flex items-center justify-end gap-2 md:border-l border-slate-50 md:pl-4">
-                                  <button onClick={(e) => { e.stopPropagation(); setEditingProject(project); setIsEditOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Pencil size={18} /></button>
+                              <div className="md:col-span-1">
+                                <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Entrega</p>
+                                <p className="text-[12px] font-bold text-slate-500">{project.deliveryDate || project.replannedDate || project.baseline || '---'}</p>
+                              </div>
+
+                              <div className="md:col-span-1">
+                                <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">P.O</p>
+                                <div className="w-7 h-7 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-[10px] font-bold border border-indigo-100">
+                                  {project.po ? project.po.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?'}
+                                </div>
+                              </div>
+
+                                <div className="md:col-span-1 flex items-center justify-end gap-1 md:border-l border-slate-50 md:pl-2">
+                                  <button onClick={(e) => { e.stopPropagation(); setEditingProject(project); setIsEditOpen(true); }} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Pencil size={16} /></button>
                                   <button
                                     onClick={(e) => { e.stopPropagation(); handleDeleteProject(project); }}
                                     disabled={deletingProjectId === project.id}
-                                    className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                                   >
-                                    {deletingProjectId === project.id ? <div className="w-4 h-4 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" /> : <Trash2 size={18} />}
+                                    {deletingProjectId === project.id ? <div className="w-3.5 h-3.5 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" /> : <Trash2 size={16} />}
                                   </button>
                                 </div>
                               </div>
@@ -787,13 +800,13 @@ export default function App() {
       <AnimatePresence>
         {isCreateOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-4 sm:p-6 my-8">
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-2xl font-bold text-slate-900">Novo Projeto</h2>
-                <button onClick={() => setIsCreateOpen(false)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-50 rounded-full"><X size={24} /></button>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-5 sm:p-5 my-8">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Novo Projeto</h2>
+                <button onClick={() => setIsCreateOpen(false)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-50 rounded-full"><X size={20} /></button>
               </div>
-              <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(newProject, false); }} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(newProject, false); }} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
                     <FormField label="Nome do Projeto"><input required placeholder="Nome do Projeto" value={newProject.name} onChange={(e) => setNewProject({...newProject, name: e.target.value})} className={inputClass} /></FormField>
                   </div>
@@ -856,13 +869,13 @@ export default function App() {
 
         {isEditOpen && editingProject && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-4 sm:p-6 my-8">
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-2xl font-bold text-slate-900">Editar Projeto</h2>
-                <button onClick={() => setIsEditOpen(false)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-50 rounded-full"><X size={24} /></button>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-5 sm:p-5 my-8">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Editar Projeto</h2>
+                <button onClick={() => setIsEditOpen(false)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-50 rounded-full"><X size={20} /></button>
               </div>
-              <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(editingProject, true); }} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(editingProject, true); }} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
                     <FormField label="Nome do Projeto"><input required value={editingProject.name} onChange={(e) => setEditingProject({...editingProject, name: e.target.value})} className={inputClass} /></FormField>
                   </div>
