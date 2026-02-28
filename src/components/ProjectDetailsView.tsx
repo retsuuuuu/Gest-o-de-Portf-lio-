@@ -1,10 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import {
   Bell, Settings, Plus, CheckCircle2, Clock,
-  Pencil, Save, Calendar, ArrowLeft
+  Pencil, Save, Calendar, ArrowLeft,
+  Star, Heart, ThumbsUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Project, TeamData } from '../types';
+
+const PriorityIcon = React.memo(({ priority }: { priority: string }) => {
+  switch (priority) {
+    case 'Star': return <Star size={20} className="text-amber-400 fill-amber-400" />;
+    case 'Heart': return <Heart size={20} className="text-rose-400 fill-rose-400" />;
+    case 'Like': return <ThumbsUp size={20} className="text-blue-400 fill-blue-400" />;
+    default: return null;
+  }
+});
 
 const StatusBadge = React.memo(({ status }: { status: string }) => {
   const getStyles = () => {
@@ -146,33 +156,36 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, isSaving
                   Relatório Ativo
                 </div>
               </div>
-              <h1 className="text-2xl sm:text-5xl font-bold text-slate-900 tracking-tight leading-tight sm:leading-none">{project.name}</h1>
+              <div className="flex items-center gap-4">
+                <h1 className="text-2xl sm:text-5xl font-bold text-slate-900 tracking-tight leading-tight sm:leading-none">{project.name}</h1>
+                {project.priority && project.priority !== 'Normal' && <PriorityIcon priority={project.priority} />}
+              </div>
             </div>
             <button onClick={onEdit} className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
               <Pencil size={18} /> Editar Projeto
             </button>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 border-t border-slate-100 pt-8 mt-4 gap-6 md:gap-0">
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Código</p>
-              <p className="text-xl font-bold text-slate-900">{project.code}</p>
+          <div className="grid grid-cols-2 md:grid-cols-5 border-t border-slate-100 pt-8 mt-4 gap-4 md:gap-0">
+            <div className="space-y-1 md:pr-4">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Código</p>
+              <p className="text-xl font-bold text-slate-900 truncate">{project.code}</p>
             </div>
-            <div className="space-y-1 md:border-x md:border-slate-100 md:px-8">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cliente</p>
+            <div className="space-y-1 md:border-l md:border-slate-100 md:px-4">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Cliente</p>
               <p className="text-xl font-bold text-slate-900 truncate" title={project.client}>{project.client || 'N/A'}</p>
             </div>
-            <div className="space-y-1 md:border-x md:border-slate-100 md:px-8">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Baseline</p>
-              <p className="text-xl font-bold text-slate-900">{project.baseline || '---'}</p>
+            <div className="space-y-1 md:border-l md:border-slate-100 md:px-4">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Baseline</p>
+              <p className="text-xl font-bold text-slate-900 truncate">{project.baseline || '---'}</p>
             </div>
-            <div className="space-y-1 md:border-x md:border-slate-100 md:px-8">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Replan.</p>
-              <p className="text-xl font-bold text-slate-900">{project.replannedDate || '---'}</p>
+            <div className="space-y-1 md:border-l md:border-slate-100 md:px-4">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Replan.</p>
+              <p className="text-xl font-bold text-slate-900 truncate">{project.replannedDate || '---'}</p>
             </div>
-            <div className="space-y-1 md:pl-8">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Entrega</p>
-              <p className="text-xl font-bold text-slate-900">{project.deliveryDate || '---'}</p>
+            <div className="space-y-1 md:border-l md:border-slate-100 md:pl-4">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Entrega</p>
+              <p className="text-xl font-bold text-slate-900 truncate">{project.deliveryDate || '---'}</p>
             </div>
           </div>
         </div>

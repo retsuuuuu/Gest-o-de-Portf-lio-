@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from
 import { 
   LayoutDashboard, BarChart3, Search, Bell, Settings, Plus,
   AlertCircle, CheckCircle2, Clock, Filter, PauseCircle, ShieldAlert,
-  Eye, Pencil, X, Save, Calendar, Trash2, ArrowLeft
+  Eye, Pencil, X, Save, Calendar, Trash2, ArrowLeft,
+  Info, Star, Heart, ThumbsUp
 } from 'lucide-react';
 import { useUser, SignedIn, SignedOut, SignIn, UserButton } from '@clerk/clerk-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -87,16 +88,33 @@ const MultiSelect = React.memo(({ label, options, selected, onChange }: { label:
   );
 });
 
-const StatCard = React.memo(({ label, value, icon: Icon, color, onClick, variant = 'light' }: { label: string, value: string | number, icon: any, color: string, onClick?: () => void, variant?: 'light' | 'dark' }) => (
-  <div onClick={onClick} className={`${variant === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'} p-7 rounded-2xl border ${variant === 'dark' ? 'border-slate-800' : 'border-slate-100'} shadow-sm hover:shadow-md transition-shadow flex flex-col h-full ${onClick ? 'cursor-pointer hover:border-indigo-200' : ''}`}>
-    <div className="flex justify-between items-start mb-4">
-      <div className={`p-2.5 rounded-xl ${color} shadow-lg shadow-current/10`}>
-        <Icon size={24} className="text-white" />
+const StatCard = React.memo(({ label, value, icon: Icon, color, onClick, variant = 'light', delayedCount = 0 }: { label: string, value: string | number, icon: any, color: string, onClick?: () => void, variant?: 'light' | 'rose', delayedCount?: number }) => (
+  <div
+    onClick={onClick}
+    className={`p-5 rounded-2xl border transition-all flex flex-col h-full relative group
+      ${variant === 'rose'
+        ? 'bg-rose-50 border-rose-100 shadow-sm'
+        : 'bg-white border-slate-100 shadow-sm hover:border-indigo-200'}
+      ${onClick ? 'cursor-pointer' : ''}`}
+  >
+    <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center gap-3">
+        <div className={`p-2 rounded-lg ${variant === 'rose' ? 'bg-rose-500 text-white shadow-md' : 'bg-slate-50 text-slate-400 border border-slate-100'}`}>
+          <Icon size={18} />
+        </div>
+        <h3 className={`${variant === 'rose' ? 'text-rose-800' : 'text-slate-500'} text-xs font-bold`}>{label}</h3>
       </div>
+      <Info size={14} className="text-slate-300" />
     </div>
-    <div className="flex-1 flex flex-col justify-between">
-      <h3 className={`${variant === 'dark' ? 'text-slate-400' : 'text-slate-500'} text-[13px] font-bold uppercase tracking-wider mb-2 min-h-[32px] flex items-center leading-tight`}>{label}</h3>
-      <p className={`text-5xl font-extrabold ${variant === 'dark' ? 'text-white' : 'text-slate-900'} tracking-tight`}>{value}</p>
+
+    <div className="flex items-end gap-3">
+      <p className={`text-3xl font-bold ${variant === 'rose' ? 'text-rose-600' : 'text-slate-900'} tracking-tight`}>{value}</p>
+      {delayedCount > 0 && (
+        <div className="flex items-center gap-1 px-2 py-0.5 bg-rose-100 text-rose-600 rounded-md text-[10px] font-black border border-rose-200 mb-1 animate-pulse">
+          <Clock size={10} strokeWidth={3} />
+          {delayedCount}
+        </div>
+      )}
     </div>
   </div>
 ));
@@ -111,6 +129,15 @@ const FormField = React.memo(({ label, children }: { label: string, children: Re
 ));
 
 const inputClass = "w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all placeholder:text-slate-400";
+
+const PriorityIcon = React.memo(({ priority }: { priority: string }) => {
+  switch (priority) {
+    case 'Star': return <Star size={14} className="text-amber-400 fill-amber-400" />;
+    case 'Heart': return <Heart size={14} className="text-rose-400 fill-rose-400" />;
+    case 'Like': return <ThumbsUp size={14} className="text-blue-400 fill-blue-400" />;
+    default: return null;
+  }
+});
 
 const maskDate = (value: string) => {
   if (!value) return '';
@@ -248,7 +275,7 @@ export default function App() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newProject, setNewProject] = useState<Partial<Project>>({
-    name: '', initiative: '', client: '', phase: 'Backlog', status: 'Backlog', farol: 'No prazo', baseline: '', report: '', type: 'Estratégico'
+    name: '', initiative: '', client: '', phase: 'Backlog', status: 'Backlog', farol: 'No prazo', baseline: '', report: '', type: 'Estratégico', priority: 'Normal'
   });
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -354,7 +381,7 @@ export default function App() {
         const newProj: Project = { ...projectToSave, code, id: Date.now().toString() } as Project;
         setProjectsData(prev => [...prev, newProj]);
         setIsCreateOpen(false);
-        setNewProject({ name: '', initiative: '', client: '', phase: 'Backlog', status: 'Backlog', farol: 'No prazo', baseline: '', report: '', type: 'Estratégico' });
+        setNewProject({ name: '', initiative: '', client: '', phase: 'Backlog', status: 'Backlog', farol: 'No prazo', baseline: '', report: '', type: 'Estratégico', priority: 'Normal' });
       }
     } catch (error) {
       console.error("Erro crítico de submissão:", error);
@@ -480,13 +507,24 @@ export default function App() {
   }, [projectsData, searchQuery, statusFilter, farolFilter, clientFilter]);
 
   const stats = useMemo(() => {
-    if (!filteredData.length) return { atrasados: 0, emAndamento: 0, pausados: 0, impedimento: 0, concluidos: 0 };
+    if (!filteredData.length) return { atrasados: 0, emAndamento: 0, pausados: 0, impedimento: 0, concluidos: 0, delayedPerStatus: { emAndamento: 0, pausados: 0, impedimento: 0, concluidos: 0 } };
+
+    const atrasados = filteredData.filter(p => (p.farol || '').toLowerCase().includes('atrasado'));
+    const countDelayedByStatus = (status: string) =>
+      atrasados.filter(p => (p.status || '').toLowerCase() === status.toLowerCase()).length;
+
     return {
-      atrasados: filteredData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')).length,
+      atrasados: atrasados.length,
       emAndamento: filteredData.filter(p => (p.status || '').toLowerCase() === 'em andamento').length,
       pausados: filteredData.filter(p => (p.status || '').toLowerCase() === 'pausado').length,
       impedimento: filteredData.filter(p => (p.status || '').toLowerCase() === 'impedimento').length,
       concluidos: filteredData.filter(p => (p.status || '').toLowerCase() === 'concluído').length,
+      delayedPerStatus: {
+        emAndamento: countDelayedByStatus('em andamento'),
+        pausados: countDelayedByStatus('pausado'),
+        impedimento: countDelayedByStatus('impedimento'),
+        concluidos: countDelayedByStatus('concluído')
+      }
     };
   }, [filteredData]);
 
@@ -600,25 +638,25 @@ export default function App() {
             </Suspense>
           ) : activeTab === 'Visão Geral' ? (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <motion.div
-                    animate={stats.atrasados > 0 ? { scale: [1, 1.05, 1] } : {}}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                      className={`h-full rounded-2xl transition-all ${stats.atrasados > 0 ? 'ring-4 ring-rose-500 ring-offset-4 shadow-[0_0_40px_rgba(244,63,94,0.5)]' : ''}`}
+                    animate={stats.atrasados > 0 ? { scale: [1, 1.02, 1] } : {}}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className={`h-full rounded-2xl transition-all ${stats.atrasados > 0 ? 'ring-2 ring-rose-500 ring-offset-2' : ''}`}
                 >
                     <StatCard
-                      label="PROJETOS ATRASADOS"
+                      label="ATRASADOS (GERAL)"
                       value={stats.atrasados}
                       icon={AlertCircle}
-                      color="bg-rose-500"
-                      variant="dark"
+                      color="text-rose-600"
+                      variant="rose"
                       onClick={() => handleOpenListModal("Projetos Atrasados", filteredData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')))}
                     />
                 </motion.div>
-                <StatCard label="PROJETOS EM ANDAMENTO" value={stats.emAndamento} icon={Clock} color="bg-blue-500" onClick={() => handleOpenListModal("Projetos em Andamento", filteredData.filter(p => (p.status || '').toLowerCase() === 'em andamento'))} />
-                <StatCard label="PROJETOS PAUSADOS" value={stats.pausados} icon={PauseCircle} color="bg-amber-500" onClick={() => handleOpenListModal("Projetos Pausados", filteredData.filter(p => (p.status || '').toLowerCase() === 'pausado'))} />
-                <StatCard label="PROJETOS EM IMPEDIMENTO" value={stats.impedimento} icon={ShieldAlert} color="bg-slate-500" onClick={() => handleOpenListModal("Projetos em Impedimento", filteredData.filter(p => (p.status || '').toLowerCase() === 'impedimento'))} />
-                <StatCard label="PROJETOS CONCLUÍDOS" value={stats.concluidos} icon={CheckCircle2} color="bg-emerald-500" onClick={() => handleOpenListModal("Projetos Concluídos", filteredData.filter(p => (p.status || '').toLowerCase() === 'concluído'))} />
+                <StatCard label="EM ANDAMENTO" value={stats.emAndamento} delayedCount={stats.delayedPerStatus.emAndamento} icon={Clock} color="text-blue-600" onClick={() => handleOpenListModal("Projetos em Andamento", filteredData.filter(p => (p.status || '').toLowerCase() === 'em andamento'))} />
+                <StatCard label="PAUSADOS" value={stats.pausados} delayedCount={stats.delayedPerStatus.pausados} icon={PauseCircle} color="text-amber-600" onClick={() => handleOpenListModal("Projetos Pausados", filteredData.filter(p => (p.status || '').toLowerCase() === 'pausado'))} />
+                <StatCard label="IMPEDIMENTOS" value={stats.impedimento} delayedCount={stats.delayedPerStatus.impedimento} icon={ShieldAlert} color="text-slate-600" onClick={() => handleOpenListModal("Projetos em Impedimento", filteredData.filter(p => (p.status || '').toLowerCase() === 'impedimento'))} />
+                <StatCard label="CONCLUÍDOS" value={stats.concluidos} delayedCount={stats.delayedPerStatus.concluidos} icon={CheckCircle2} color="text-emerald-600" onClick={() => handleOpenListModal("Projetos Concluídos", filteredData.filter(p => (p.status || '').toLowerCase() === 'concluído'))} />
               </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
@@ -649,45 +687,65 @@ export default function App() {
                   ).sort(([a], [b]) => a.localeCompare(b)).map(([client, projectsList]) => {
                     const projects = projectsList as Project[];
                     return (
-                    <div key={client} className="space-y-4">
-                      <div className="flex items-center gap-4 px-2">
-                        <div className="h-px flex-1 bg-slate-200" />
-                        <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">{client}</h3>
-                        <div className="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold text-slate-500">{projects.length}</div>
-                        <div className="h-px flex-1 bg-slate-200" />
+                    <div key={client} className="space-y-6 pt-12 first:pt-4">
+                      <div className="flex items-center justify-between px-6 py-5 bg-slate-900 rounded-[2rem] shadow-xl shadow-slate-200/50 relative overflow-hidden group mx-2">
+                        <div className="flex items-center gap-5 relative z-10">
+                          <div className="w-1.5 h-12 bg-indigo-500 rounded-full group-hover:scale-y-110 transition-transform duration-500" />
+                          <div>
+                            <h3 className="text-2xl font-black text-white tracking-tight uppercase leading-none mb-1">{client}</h3>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] leading-none">Organização Parceira</p>
+                          </div>
+                          <div className="ml-6 px-4 py-2 bg-indigo-600 text-white rounded-2xl text-xs font-black shadow-lg shadow-indigo-900/40 border border-indigo-500/30">
+                            {projects.length} PROJETOS
+                          </div>
+                        </div>
+                        <div className="absolute right-0 top-0 bottom-0 w-1/2 bg-gradient-to-l from-indigo-500/10 to-transparent pointer-events-none" />
+                        <div className="absolute -right-4 -top-8 text-white/5 font-black text-8xl tracking-tighter uppercase pointer-events-none select-none">
+                          {client.slice(0, 3)}
+                        </div>
                       </div>
 
-                      <div className="grid grid-cols-1 gap-4">
+                      <div className="bg-slate-50/50 rounded-[2.5rem] p-3 space-y-3 border border-slate-100">
+                        <div className="hidden md:grid grid-cols-12 gap-6 px-6 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-slate-400">
+                          <div className="col-span-4">Projeto / Iniciativa</div>
+                          <div className="col-span-2">Fase</div>
+                          <div className="col-span-2">Status</div>
+                          <div className="col-span-2">Farol</div>
+                          <div className="col-span-2 text-right">Ações</div>
+                        </div>
+
                         {projects.map((project: Project) => (
                           <div
                             key={project.id}
                             onClick={() => { setSelectedProject(project); setView('detalhes'); }}
                             className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all cursor-pointer group relative overflow-hidden"
                           >
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                              <div className="flex-1 space-y-2">
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                              <div className="md:col-span-4 space-y-1">
                                 <div className="flex items-center gap-3">
-                                  <h4 className="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{project.name}</h4>
-                                  <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-50 text-slate-400 rounded border border-slate-100 uppercase">{project.code}</span>
+                                  <h4 className="text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-none">{project.name}</h4>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[9px] font-bold px-1.5 py-0.5 bg-slate-50 text-slate-400 rounded border border-slate-100 uppercase">{project.code}</span>
+                                    {project.priority && project.priority !== 'Normal' && <PriorityIcon priority={project.priority} />}
+                                  </div>
                                 </div>
-                                <p className="text-sm text-slate-500 font-medium line-clamp-1">{project.initiative}</p>
+                                <p className="text-xs text-slate-400 font-medium line-clamp-1">{project.initiative}</p>
                               </div>
 
-                              <div className="flex flex-wrap items-center gap-4 md:gap-8">
-                                <div className="space-y-1 min-w-[120px]">
-                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fase Atual</p>
-                                  <p className="text-sm font-bold text-slate-700">{project.phase}</p>
-                                </div>
-                                <div className="space-y-1 min-w-[120px]">
-                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</p>
-                                  <StatusBadge status={project.status} />
-                                </div>
-                                <div className="space-y-1 min-w-[120px]">
-                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Farol</p>
-                                  <FarolIndicator farol={project.farol} />
-                                </div>
+                              <div className="md:col-span-2">
+                                <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Fase</p>
+                                <p className="text-sm font-semibold text-slate-600 truncate">{project.phase}</p>
+                              </div>
+                              <div className="md:col-span-2">
+                                <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Status</p>
+                                <StatusBadge status={project.status} />
+                              </div>
+                              <div className="md:col-span-2">
+                                <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Farol</p>
+                                <FarolIndicator farol={project.farol} />
+                              </div>
 
-                                <div className="flex items-center gap-2 md:ml-4 border-l border-slate-100 pl-4">
+                                <div className="md:col-span-2 flex items-center justify-end gap-2 md:border-l border-slate-50 md:pl-4">
                                   <button onClick={(e) => { e.stopPropagation(); setEditingProject(project); setIsEditOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Pencil size={18} /></button>
                                   <button
                                     onClick={(e) => { e.stopPropagation(); handleDeleteProject(project); }}
@@ -698,7 +756,6 @@ export default function App() {
                                   </button>
                                 </div>
                               </div>
-                            </div>
                             {project.farol.toLowerCase().includes('atrasado') && (
                               <div className="absolute top-0 left-0 w-1 h-full bg-rose-500" />
                             )}
@@ -740,11 +797,17 @@ export default function App() {
                   <div className="md:col-span-2">
                     <FormField label="Nome do Projeto"><input required placeholder="Nome do Projeto" value={newProject.name} onChange={(e) => setNewProject({...newProject, name: e.target.value})} className={inputClass} /></FormField>
                   </div>
+                  <FormField label="Código do Projeto"><input placeholder="Ex: C00001" value={newProject.code} onChange={(e) => setNewProject({...newProject, code: e.target.value})} className={inputClass} /></FormField>
                   <FormField label="Iniciativa"><input required placeholder="Iniciativa" value={newProject.initiative} onChange={(e) => setNewProject({...newProject, initiative: e.target.value})} className={inputClass} /></FormField>
                   <FormField label="Cliente"><input required placeholder="Cliente" value={newProject.client} onChange={(e) => setNewProject({...newProject, client: e.target.value})} className={inputClass} /></FormField>
-                  <div className="md:col-span-2">
-                    <FormField label="Código do Projeto"><input placeholder="Ex: C00001" value={newProject.code} onChange={(e) => setNewProject({...newProject, code: e.target.value})} className={inputClass} /></FormField>
-                  </div>
+                  <FormField label="Prioridade">
+                    <select value={newProject.priority} onChange={(e) => setNewProject({...newProject, priority: e.target.value as any})} className={inputClass}>
+                      <option value="Normal">Normal</option>
+                      <option value="Star">Star (Alta)</option>
+                      <option value="Heart">Heart (Média)</option>
+                      <option value="Like">Like (Baixa)</option>
+                    </select>
+                  </FormField>
                   <FormField label="Status">
                     <select value={newProject.status} onChange={(e) => {
                       const status = e.target.value;
@@ -803,11 +866,17 @@ export default function App() {
                   <div className="md:col-span-2">
                     <FormField label="Nome do Projeto"><input required value={editingProject.name} onChange={(e) => setEditingProject({...editingProject, name: e.target.value})} className={inputClass} /></FormField>
                   </div>
+                  <FormField label="Código do Projeto"><input required value={editingProject.code} onChange={(e) => setEditingProject({...editingProject, code: e.target.value})} className={inputClass} /></FormField>
                   <FormField label="Iniciativa"><input required value={editingProject.initiative} onChange={(e) => setEditingProject({...editingProject, initiative: e.target.value})} className={inputClass} /></FormField>
                   <FormField label="Cliente"><input required value={editingProject.client} onChange={(e) => setEditingProject({...editingProject, client: e.target.value})} className={inputClass} /></FormField>
-                  <div className="md:col-span-2">
-                    <FormField label="Código do Projeto"><input required value={editingProject.code} onChange={(e) => setEditingProject({...editingProject, code: e.target.value})} className={inputClass} /></FormField>
-                  </div>
+                  <FormField label="Prioridade">
+                    <select value={editingProject.priority} onChange={(e) => setEditingProject({...editingProject, priority: e.target.value as any})} className={inputClass}>
+                      <option value="Normal">Normal</option>
+                      <option value="Star">Star (Alta)</option>
+                      <option value="Heart">Heart (Média)</option>
+                      <option value="Like">Like (Baixa)</option>
+                    </select>
+                  </FormField>
                   <FormField label="Status">
                     <select value={editingProject.status} onChange={(e) => {
                       const status = e.target.value;

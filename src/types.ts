@@ -29,6 +29,7 @@ export interface Project {
   ux?: string;
   qa?: string;
   ti?: string;
+  priority?: Priority;
 }
 
-export type Priority = 'Star' | 'Heart' | 'Like';
+export type Priority = 'Star' | 'Heart' | 'Like' | 'Normal';
