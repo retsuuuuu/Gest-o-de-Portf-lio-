@@ -234,6 +234,7 @@ export default function App() {
 
   const [view, setView] = useState<'dashboard' | 'detalhes'>('dashboard');
   const [activeTab, setActiveTab] = useState('Visão Geral');
+  const [activeSubTab, setActiveSubTab] = useState<'Ativos' | 'Backlog'>('Ativos');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>(['Todos']);
   const [farolFilter, setFarolFilter] = useState<string[]>(['Todos']);
@@ -506,18 +507,21 @@ export default function App() {
   }, [projectsData, searchQuery, statusFilter, farolFilter, clientFilter]);
 
   const stats = useMemo(() => {
-    if (!filteredData.length) return { atrasados: 0, emAndamento: 0, pausados: 0, impedimento: 0, concluidos: 0, delayedPerStatus: { emAndamento: 0, pausados: 0, impedimento: 0, concluidos: 0 } };
+    // Excluir Backlog das estatísticas para evitar deturpação
+    const activeProjects = filteredData.filter(p => (p.status || '').toLowerCase() !== 'backlog');
 
-    const atrasados = filteredData.filter(p => (p.farol || '').toLowerCase().includes('atrasado'));
+    if (!activeProjects.length) return { atrasados: 0, emAndamento: 0, pausados: 0, impedimento: 0, concluidos: 0, delayedPerStatus: { emAndamento: 0, pausados: 0, impedimento: 0, concluidos: 0 } };
+
+    const atrasados = activeProjects.filter(p => (p.farol || '').toLowerCase().includes('atrasado'));
     const countDelayedByStatus = (status: string) =>
       atrasados.filter(p => (p.status || '').toLowerCase() === status.toLowerCase()).length;
 
     return {
       atrasados: atrasados.length,
-      emAndamento: filteredData.filter(p => (p.status || '').toLowerCase() === 'em andamento').length,
-      pausados: filteredData.filter(p => (p.status || '').toLowerCase() === 'pausado').length,
-      impedimento: filteredData.filter(p => (p.status || '').toLowerCase() === 'impedimento').length,
-      concluidos: filteredData.filter(p => (p.status || '').toLowerCase() === 'concluído').length,
+      emAndamento: activeProjects.filter(p => (p.status || '').toLowerCase() === 'em andamento').length,
+      pausados: activeProjects.filter(p => (p.status || '').toLowerCase() === 'pausado').length,
+      impedimento: activeProjects.filter(p => (p.status || '').toLowerCase() === 'impedimento').length,
+      concluidos: activeProjects.filter(p => (p.status || '').toLowerCase() === 'concluído').length,
       delayedPerStatus: {
         emAndamento: countDelayedByStatus('em andamento'),
         pausados: countDelayedByStatus('pausado'),
@@ -637,6 +641,22 @@ export default function App() {
             </Suspense>
           ) : activeTab === 'Visão Geral' ? (
             <>
+              <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 w-fit mb-6">
+                <button
+                  onClick={() => setActiveSubTab('Ativos')}
+                  className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'Ativos' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                >
+                  Projetos Ativos
+                </button>
+                <button
+                  onClick={() => setActiveSubTab('Backlog')}
+                  className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'Backlog' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                >
+                  Backlog
+                </button>
+              </div>
+
+              {activeSubTab === 'Ativos' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <motion.div
                     animate={stats.atrasados > 0 ? { scale: [1, 1.02, 1] } : {}}
@@ -657,6 +677,25 @@ export default function App() {
                 <StatCard label="IMPEDIMENTOS" value={stats.impedimento} delayedCount={stats.delayedPerStatus.impedimento} icon={ShieldAlert} color="text-slate-600" onClick={() => handleOpenListModal("Projetos em Impedimento", filteredData.filter(p => (p.status || '').toLowerCase() === 'impedimento'))} />
                 <StatCard label="CONCLUÍDOS" value={stats.concluidos} delayedCount={stats.delayedPerStatus.concluidos} icon={CheckCircle2} color="text-emerald-600" onClick={() => handleOpenListModal("Projetos Concluídos", filteredData.filter(p => (p.status || '').toLowerCase() === 'concluído'))} />
               </div>
+              ) : (
+                <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+                      <LayoutDashboard size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Projetos em Backlog</h3>
+                      <p className="text-sm text-slate-500">Iniciativas aguardando priorização e briefing inicial</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-4xl font-black text-indigo-600 tracking-tighter leading-none">
+                      {filteredData.filter(p => (p.status || '').toLowerCase() === 'backlog').length}
+                    </p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total no Backlog</p>
+                  </div>
+                </div>
+              )}
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
                   <MultiSelect label="Status" options={['Todos', ...ALL_STATUS]} selected={statusFilter} onChange={setStatusFilter} />
@@ -679,8 +718,13 @@ export default function App() {
                   {Object.entries(
                     filteredData.reduce((acc, p) => {
                       const client = p.client || 'Outros / Interno';
-                      if (!acc[client]) acc[client] = [];
-                      acc[client].push(p);
+                      const status = (p.status || '').toLowerCase();
+                      const isBacklog = status === 'backlog';
+
+                      if ((activeSubTab === 'Backlog' && isBacklog) || (activeSubTab === 'Ativos' && !isBacklog)) {
+                        if (!acc[client]) acc[client] = [];
+                        acc[client].push(p);
+                      }
                       return acc;
                     }, {} as Record<string, Project[]>)
                   ).sort(([a], [b]) => a.localeCompare(b)).map(([client, projectsList]) => {
@@ -723,14 +767,14 @@ export default function App() {
                           >
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
                               <div className="md:col-span-3 space-y-0.5">
+                                <h4 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{project.name}</h4>
                                 <div className="flex items-center gap-2">
-                                  <h4 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{project.name}</h4>
+                                  <p className="text-[11px] text-slate-400 font-medium line-clamp-1">{project.initiative}</p>
                                   <div className="flex items-center gap-1 shrink-0">
                                     <span className="text-[8px] font-bold px-1 py-0.5 bg-slate-50 text-slate-400 rounded border border-slate-100 uppercase">{project.code}</span>
                                     {project.priority && project.priority !== 'Normal' && <PriorityIcon priority={project.priority} />}
                                   </div>
                                 </div>
-                                <p className="text-[11px] text-slate-400 font-medium line-clamp-1">{project.initiative}</p>
                               </div>
 
                               <div className="md:col-span-2">
