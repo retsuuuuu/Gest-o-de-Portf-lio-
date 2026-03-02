@@ -779,12 +779,11 @@ export default function App() {
                           >
                             <div className="bg-slate-50/50 rounded-[2.5rem] p-3 space-y-3 border border-slate-100">
                         <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-slate-400">
-                          <div className="col-span-3">Projeto / Iniciativa</div>
+                          <div className="col-span-4">Projeto / Iniciativa</div>
                           <div className="col-span-2">Fase</div>
                           <div className="col-span-2">Status</div>
                           <div className="col-span-2">Farol</div>
                           <div className="col-span-1">Entrega</div>
-                          <div className="col-span-1">P.O</div>
                           <div className="col-span-1 text-right">Ações</div>
                         </div>
 
@@ -795,7 +794,7 @@ export default function App() {
                             className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all cursor-pointer group relative overflow-hidden"
                           >
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                              <div className="md:col-span-3 space-y-0.5">
+                              <div className="md:col-span-4 space-y-0.5">
                                 <h4 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{project.name}</h4>
                                 <div className="flex items-center gap-2">
                                   <p className="text-[11px] text-slate-400 font-medium line-clamp-1">{project.initiative}</p>
@@ -822,13 +821,6 @@ export default function App() {
                               <div className="md:col-span-1">
                                 <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Entrega</p>
                                 <p className="text-[12px] font-bold text-slate-500">{project.deliveryDate || project.replannedDate || project.baseline || '---'}</p>
-                              </div>
-
-                              <div className="md:col-span-1">
-                                <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">P.O</p>
-                                <div className="w-7 h-7 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-[10px] font-bold border border-indigo-100">
-                                  {project.po ? project.po.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?'}
-                                </div>
                               </div>
 
                                 <div className="md:col-span-1 flex items-center justify-end gap-1 md:border-l border-slate-50 md:pl-2">
