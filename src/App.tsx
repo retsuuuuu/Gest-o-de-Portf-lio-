@@ -91,10 +91,10 @@ const MultiSelect = React.memo(({ label, options, selected, onChange }: { label:
 const StatCard = React.memo(({ label, value, icon: Icon, color, onClick, variant = 'light', delayedCount = 0 }: { label: string, value: string | number, icon: any, color: string, onClick?: () => void, variant?: 'light' | 'rose', delayedCount?: number }) => (
   <div
     onClick={onClick}
-    className={`p-4 rounded-2xl border transition-all flex flex-col h-full relative group
+    className={`p-4 rounded-2xl transition-all flex flex-col h-full relative group
       ${variant === 'rose'
-        ? 'bg-rose-50 border-rose-100 shadow-sm'
-        : 'bg-white border-slate-100 shadow-sm hover:border-indigo-200'}
+        ? 'bg-rose-50 shadow-sm'
+        : 'bg-white border border-slate-100 shadow-sm hover:border-indigo-200'}
       ${onClick ? 'cursor-pointer' : ''}`}
   >
     <div className="flex items-center justify-between mb-2">
@@ -107,7 +107,7 @@ const StatCard = React.memo(({ label, value, icon: Icon, color, onClick, variant
     </div>
 
     <div className="flex items-end justify-between mt-auto">
-      <p className={`text-2xl font-black ${variant === 'rose' ? 'text-rose-600' : 'text-slate-900'} tracking-tight leading-none`}>{value}</p>
+      <p className={`text-4xl font-semibold ${variant === 'rose' ? 'text-rose-600' : 'text-slate-900'} tracking-tight leading-none`}>{value}</p>
       {delayedCount > 0 && (
         <div className="flex items-center gap-1 px-1.5 py-0.5 bg-rose-100 text-rose-600 rounded-md text-[9px] font-black border border-rose-200 animate-pulse">
           <Clock size={10} strokeWidth={3} />
@@ -773,11 +773,11 @@ export default function App() {
                         {isExpanded && (
                           <motion.div
                             initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                            animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                            animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
                             exit={{ opacity: 0, height: 0, marginTop: 0 }}
                             className="overflow-hidden"
                           >
-                            <div className="bg-slate-50/50 rounded-[2.5rem] p-3 space-y-3 border border-slate-100">
+                            <div className="bg-slate-50 rounded-[2.5rem] p-3 space-y-3 border border-slate-200 shadow-inner mx-2">
                         <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-slate-400">
                           <div className="col-span-4">Projeto / Iniciativa</div>
                           <div className="col-span-2">Fase</div>
