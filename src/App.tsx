@@ -3,7 +3,7 @@ import {
   LayoutDashboard, BarChart3, Search, Bell, Settings, Plus,
   AlertCircle, CheckCircle2, Clock, Filter, PauseCircle, ShieldAlert,
   Eye, Pencil, X, Save, Calendar, Trash2, ArrowLeft,
-  Info, Star, Heart, ThumbsUp
+  Info, Star, Heart, ThumbsUp, ChevronRight
 } from 'lucide-react';
 import { useUser, SignedIn, SignedOut, SignIn, UserButton } from '@clerk/clerk-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -235,6 +235,7 @@ export default function App() {
   const [view, setView] = useState<'dashboard' | 'detalhes'>('dashboard');
   const [activeTab, setActiveTab] = useState('Visão Geral');
   const [activeSubTab, setActiveSubTab] = useState<'Ativos' | 'Backlog'>('Ativos');
+  const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>(['Todos']);
   const [farolFilter, setFarolFilter] = useState<string[]>(['Todos']);
@@ -506,6 +507,15 @@ export default function App() {
     });
   }, [projectsData, searchQuery, statusFilter, farolFilter, clientFilter]);
 
+  const toggleClient = useCallback((client: string) => {
+    setExpandedClients(prev => {
+      const next = new Set(prev);
+      if (next.has(client)) next.delete(client);
+      else next.add(client);
+      return next;
+    });
+  }, []);
+
   const stats = useMemo(() => {
     // Excluir Backlog das estatísticas para evitar deturpação
     const activeProjects = filteredData.filter(p => (p.status || '').toLowerCase() !== 'backlog');
@@ -729,26 +739,45 @@ export default function App() {
                     }, {} as Record<string, Project[]>)
                   ).sort(([a], [b]) => a.localeCompare(b)).map(([client, projectsList]) => {
                     const projects = projectsList as Project[];
+                    const isExpanded = expandedClients.has(client);
                     return (
-                    <div key={client} className="space-y-6 pt-12 first:pt-4">
-                      <div className="flex items-center justify-between px-6 py-5 bg-slate-900 rounded-[2rem] shadow-xl shadow-slate-200/50 relative overflow-hidden group mx-2">
+                    <div key={client} className="space-y-4 pt-4 first:pt-2">
+                      <div
+                        onClick={() => toggleClient(client)}
+                        className={`flex items-center justify-between px-6 py-4 rounded-[2rem] shadow-lg transition-all cursor-pointer relative overflow-hidden group mx-2 ${isExpanded ? 'bg-slate-900 shadow-slate-200/50' : 'bg-white border border-slate-100 hover:border-indigo-200 shadow-slate-100'}`}
+                      >
                         <div className="flex items-center gap-5 relative z-10">
-                          <div className="w-1.5 h-12 bg-indigo-500 rounded-full group-hover:scale-y-110 transition-transform duration-500" />
+                          <div className={`w-1.5 h-10 rounded-full transition-all duration-500 ${isExpanded ? 'bg-indigo-500 scale-y-110' : 'bg-slate-200 group-hover:bg-indigo-400'}`} />
                           <div>
-                            <h3 className="text-2xl font-black text-white tracking-tight uppercase leading-none mb-1">{client}</h3>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] leading-none">Organização Parceira</p>
+                            <h3 className={`text-xl font-black tracking-tight uppercase leading-none mb-1 transition-colors ${isExpanded ? 'text-white' : 'text-slate-900 group-hover:text-indigo-600'}`}>{client}</h3>
+                            <p className={`text-[10px] font-bold uppercase tracking-[0.3em] leading-none transition-colors ${isExpanded ? 'text-slate-400' : 'text-slate-400'}`}>Organização Parceira</p>
                           </div>
-                          <div className="ml-6 px-4 py-2 bg-indigo-600 text-white rounded-2xl text-xs font-black shadow-lg shadow-indigo-900/40 border border-indigo-500/30">
+                          <div className={`ml-6 px-4 py-1.5 rounded-2xl text-[10px] font-black shadow-lg border transition-all ${isExpanded ? 'bg-indigo-600 text-white shadow-indigo-900/40 border-indigo-500/30' : 'bg-slate-50 text-slate-500 border-slate-100 group-hover:bg-indigo-50 group-hover:text-indigo-600'}`}>
                             {projects.length} PROJETOS
                           </div>
                         </div>
-                        <div className="absolute right-0 top-0 bottom-0 w-1/2 bg-gradient-to-l from-indigo-500/10 to-transparent pointer-events-none" />
-                        <div className="absolute -right-4 -top-8 text-white/5 font-black text-8xl tracking-tighter uppercase pointer-events-none select-none">
-                          {client.slice(0, 3)}
+                        <div className="flex items-center gap-4 relative z-10">
+                          <ChevronRight className={`transition-transform duration-500 ${isExpanded ? 'rotate-90 text-white' : 'text-slate-300 group-hover:text-indigo-400'}`} size={24} />
                         </div>
+                        {isExpanded && (
+                          <>
+                            <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-indigo-500/10 to-transparent pointer-events-none" />
+                            <div className="absolute -right-4 -top-6 text-white/5 font-black text-7xl tracking-tighter uppercase pointer-events-none select-none">
+                              {client.slice(0, 3)}
+                            </div>
+                          </>
+                        )}
                       </div>
 
-                      <div className="bg-slate-50/50 rounded-[2.5rem] p-3 space-y-3 border border-slate-100">
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                            animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                            exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="bg-slate-50/50 rounded-[2.5rem] p-3 space-y-3 border border-slate-100">
                         <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-slate-400">
                           <div className="col-span-3">Projeto / Iniciativa</div>
                           <div className="col-span-2">Fase</div>
@@ -818,7 +847,10 @@ export default function App() {
                             )}
                           </div>
                         ))}
-                      </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   )})}
                   {filteredData.length === 0 && (
