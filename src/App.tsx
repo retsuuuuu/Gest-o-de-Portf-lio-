@@ -107,7 +107,7 @@ const StatCard = React.memo(({ label, value, icon: Icon, color, onClick, variant
     </div>
 
     <div className="flex items-end justify-between mt-auto">
-      <p className={`text-4xl font-semibold ${variant === 'rose' ? 'text-rose-600' : 'text-slate-900'} tracking-tight leading-none`}>{value}</p>
+      <p className={`text-4xl font-medium ${variant === 'rose' ? 'text-rose-600' : 'text-slate-900'} tracking-tight leading-none`}>{value}</p>
       {delayedCount > 0 && (
         <div className="flex items-center gap-1 px-1.5 py-0.5 bg-rose-100 text-rose-600 rounded-md text-[9px] font-black border border-rose-200 animate-pulse">
           <Clock size={10} strokeWidth={3} />
@@ -671,7 +671,7 @@ export default function App() {
                 <motion.div
                     animate={stats.atrasados > 0 ? { scale: [1, 1.02, 1] } : {}}
                     transition={{ duration: 2, repeat: Infinity }}
-                    className={`h-full rounded-2xl transition-all ${stats.atrasados > 0 ? 'ring-2 ring-rose-500 ring-offset-2' : ''}`}
+                    className="h-full rounded-2xl transition-all"
                 >
                     <StatCard
                       label="ATRASADOS (GERAL)"
