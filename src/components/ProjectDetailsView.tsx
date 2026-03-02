@@ -305,12 +305,13 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, isSaving
               exit={{ opacity: 0, scale: 0.95 }}
               className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6"
             >
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex justify-between items-center mb-6 shrink-0">
                 <h2 className="text-xl font-bold text-slate-900">Registrar profissional</h2>
                 <button onClick={() => setIsAddingMember(false)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-50 rounded-full">
                   <ArrowLeft size={20} className="rotate-90" />
                 </button>
               </div>
+              <div className="overflow-y-auto max-h-[80vh] pr-2 custom-scrollbar">
               <form onSubmit={handleRegister} className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nome Completo</label>
@@ -336,7 +337,7 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, isSaving
                     <option value="TI">Lead Developer (TI)</option>
                   </select>
                 </div>
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-3 pt-6 pb-2">
                   <button
                     type="button"
                     onClick={() => setIsAddingMember(false)}
@@ -354,6 +355,7 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, isSaving
                   </button>
                 </div>
               </form>
+              </div>
             </motion.div>
           </div>
         )}
