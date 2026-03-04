@@ -679,7 +679,10 @@ export default function App() {
                       icon={AlertCircle}
                       color="text-rose-600"
                       variant="rose"
-                      onClick={() => handleOpenListModal("Projetos Atrasados", filteredData.filter(p => (p.farol || '').toLowerCase().includes('atrasado')))}
+                      onClick={() => handleOpenListModal("Projetos Atrasados", filteredData.filter(p =>
+                        (p.farol || '').toLowerCase().includes('atrasado') &&
+                        (p.status || '').toLowerCase() !== 'backlog'
+                      ))}
                     />
                 </motion.div>
                 <StatCard label="EM ANDAMENTO" value={stats.emAndamento} delayedCount={stats.delayedPerStatus.emAndamento} icon={Clock} color="text-blue-600" onClick={() => handleOpenListModal("Projetos em Andamento", filteredData.filter(p => (p.status || '').toLowerCase() === 'em andamento'))} />
@@ -698,11 +701,20 @@ export default function App() {
                       <p className="text-sm text-slate-500">Iniciativas aguardando priorização e briefing inicial</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-4xl font-black text-indigo-600 tracking-tighter leading-none">
-                      {filteredData.filter(p => (p.status || '').toLowerCase() === 'backlog').length}
-                    </p>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total no Backlog</p>
+                  <div className="flex items-center gap-8">
+                    <div className="text-right">
+                      <p className="text-4xl font-black text-rose-600 tracking-tighter leading-none">
+                        {filteredData.filter(p => (p.status || '').toLowerCase() === 'backlog' && (p.farol || '').toLowerCase().includes('atrasado')).length}
+                      </p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Atrasados</p>
+                    </div>
+                    <div className="w-px h-10 bg-slate-100" />
+                    <div className="text-right">
+                      <p className="text-4xl font-black text-indigo-600 tracking-tighter leading-none">
+                        {filteredData.filter(p => (p.status || '').toLowerCase() === 'backlog').length}
+                      </p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total no Backlog</p>
+                    </div>
                   </div>
                 </div>
               )}
