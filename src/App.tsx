@@ -17,7 +17,7 @@ const NotificationsModal = lazy(() => import('./components/NotificationsModal').
 const SettingsModal = lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
 const ProjectDetailsView = lazy(() => import('./components/ProjectDetailsView').then(m => ({ default: m.ProjectDetailsView })));
 
-const API_URL = "https://script.google.com/macros/s/AKfycbyv5qevsFfNZMQkgPTu2mQyxNRPTyrYrk-rbtx21SZsA_k3Qcbn43e-NspniNjooKh7VQ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbx1ofHix_y221y3oPdnAVstf2XLOuGaJiAeOPGKGvDh7d9M7JsPtBrXxgakTntJOYAXhg/exec";
 
 const SidebarItem = React.memo(({ icon: Icon, label, active = false, onClick }: { icon: any, label: string, active?: boolean, onClick?: () => void }) => (
   <div onClick={onClick} className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all ${active ? 'bg-indigo-50 text-indigo-600 font-medium' : 'text-slate-500 hover:bg-slate-50'}`}>
@@ -276,6 +276,7 @@ export default function App() {
   const [view, setView] = useState<'dashboard' | 'detalhes'>('dashboard');
   const [activeTab, setActiveTab] = useState('Visão Geral');
   const [activeSubTab, setActiveSubTab] = useState<'Ativos' | 'Backlog'>('Ativos');
+  const [rawProjetos, setRawProjetos] = useState<any[]>([]);
   const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>(['Todos']);
@@ -340,33 +341,44 @@ export default function App() {
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
       const data = await response.json();
-      const projects = Array.isArray(data) ? data : data.projetos || [];
+      const hierarchicalProjects = data.projetos || [];
       const team = data.equipeDisponivel || { "P.O": [], "UX": [], "QA": [], "TI": [] };
 
-      const mapped: Project[] = projects.map((row: any, i: number) => ({
-        id: String(i),
-        type: row['TIPO PROJETO'] || '',
-        initiative: row['INICIATIVA'] || '',
-        client: row['Cliente'] || row['CLIENTE'] || '',
-        code: row['CODIGO PROJETO'] || `C${Math.floor(Math.random() * 90000)}`,
-        name: row['PROJETO'] || 'Sem Nome',
-        phase: row['FASE'] || 'Backlog',
-        status: row['STATUS'] || 'Backlog',
-        baseline: formatToDDMMYYYY(row['BASELINE'] || ''),
-        report: row['REPORT'] || '',
-        farol: row['FAROL'] || 'No prazo',
-        deliveryDate: formatToDDMMYYYY(row['ENTREGA'] || ''),
-        replannedDate: formatToDDMMYYYY(row['REPLANEJAMENTO'] || ''),
-        description: row['DESCRIPTION'] || '',
-        po: row['PO'] || row['P.O'] || '',
-        ux: row['UX'] || '',
-        qa: row['QA'] || '',
-        ti: row['TI'] || '',
-      }));
+      setRawProjetos(hierarchicalProjects);
 
-      setProjectsData(mapped);
+      const flattened: Project[] = [];
+      hierarchicalProjects.forEach((p: any) => {
+        if (p.itens && Array.isArray(p.itens)) {
+          p.itens.forEach((row: any, i: number) => {
+            flattened.push({
+              id: `${p.projeto}-${i}-${row['Item']}`,
+              type: row['TIPO PROJETO'] || '',
+              initiative: row['INICIATIVA'] || '',
+              client: row['Cliente'] || row['CLIENTE'] || '',
+              code: row['CODIGO PROJETO'] || '',
+              name: row['PROJETO'] || p.projeto || 'Sem Nome',
+              item: row['Item'] || '',
+              equipe: row['Equipe'] || '',
+              phase: row['FASE'] || 'Backlog',
+              status: row['STATUS'] || 'Backlog',
+              baseline: formatToDDMMYYYY(row['BASELINE'] || ''),
+              report: row['REPORT'] || '',
+              farol: row['FAROL'] || 'No prazo',
+              deliveryDate: formatToDDMMYYYY(row['ENTREGA'] || ''),
+              replannedDate: formatToDDMMYYYY(row['REPLANEJAMENTO'] || ''),
+              description: row['DESCRIPTION'] || '',
+              po: row['PO'] || row['P.O'] || '',
+              ux: row['UX'] || '',
+              qa: row['QA'] || '',
+              ti: row['TI'] || '',
+            });
+          });
+        }
+      });
+
+      setProjectsData(flattened);
       setTeamData(team);
-      localStorage.setItem('tradeup_projects_cache', JSON.stringify(mapped));
+      localStorage.setItem('tradeup_projects_cache', JSON.stringify(flattened));
       localStorage.setItem('tradeup_team_cache', JSON.stringify(team));
     } catch (error: any) {
       console.error("Erro ao carregar dados", error);
@@ -387,7 +399,7 @@ export default function App() {
 
   const handleSaveProject = useCallback(async (projectToSave: Partial<Project>, isEdit: boolean) => {
     setIsSaving(true);
-    const code = projectToSave.code || `C${Math.floor(Math.random() * 90000) + 10000}`;
+    const code = projectToSave.code;
     
     const payload = {
       action: isEdit ? "update" : "create",
@@ -397,6 +409,8 @@ export default function App() {
         "CLIENTE": projectToSave.client,
         "CODIGO PROJETO": code,
         "PROJETO": projectToSave.name,
+        "Item": projectToSave.item,
+        "Equipe": projectToSave.equipe,
         "FASE": projectToSave.phase,
         "STATUS": projectToSave.status,
         "BASELINE": projectToSave.baseline,
@@ -494,13 +508,17 @@ export default function App() {
   }, []);
 
   const handleDeleteProject = useCallback(async (project: Project) => {
-    if (!window.confirm(`Tem certeza que deseja excluir o projeto "${project.name}"?`)) return;
+    if (!window.confirm(`Tem certeza que deseja excluir o item "${project.item}" do projeto "${project.name}"?`)) return;
 
     setIsSaving(true);
     setDeletingProjectId(project.id);
     const payload = {
       action: "delete",
-      payload: { "CODIGO PROJETO": project.code }
+      payload: {
+        "CODIGO PROJETO": project.code,
+        "PROJETO": project.name,
+        "Item": project.item
+      }
     };
 
     try {
@@ -697,7 +715,7 @@ export default function App() {
                   onClick={() => setActiveSubTab('Ativos')}
                   className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'Ativos' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
                 >
-                  Projetos Ativos
+                  Projetos em Andamento
                 </button>
                 <button
                   onClick={() => setActiveSubTab('Backlog')}
@@ -728,7 +746,7 @@ export default function App() {
                           ))}
                         />
                     </motion.div>
-                    <StatCard label="ATIVOS" value={stats.emAndamento} delayedCount={stats.delayedPerStatus.emAndamento} icon={Clock} color="text-blue-600" onClick={() => handleOpenListModal("Projetos em Andamento", filteredData.filter(p => (p.status || '').toLowerCase() === 'em andamento'))} />
+                    <StatCard label="EM ANDAMENTO" value={stats.emAndamento} delayedCount={stats.delayedPerStatus.emAndamento} icon={Clock} color="text-blue-600" onClick={() => handleOpenListModal("Projetos em Andamento", filteredData.filter(p => (p.status || '').toLowerCase() === 'em andamento'))} />
                     <StatCard label="PAUSADOS" value={stats.pausados} delayedCount={stats.delayedPerStatus.pausados} icon={PauseCircle} color="text-amber-600" onClick={() => handleOpenListModal("Projetos Pausados", filteredData.filter(p => (p.status || '').toLowerCase() === 'pausado'))} />
                     <StatCard label="IMPEDIMENTOS" value={stats.impedimento} delayedCount={stats.delayedPerStatus.impedimento} icon={ShieldAlert} color="text-slate-600" onClick={() => handleOpenListModal("Projetos em Impedimento", filteredData.filter(p => (p.status || '').toLowerCase() === 'impedimento'))} />
                     <StatCard label="CONCLUÍDOS" value={stats.concluidos} delayedCount={stats.delayedPerStatus.concluidos} icon={CheckCircle2} color="text-emerald-600" onClick={() => handleOpenListModal("Projetos Concluídos", filteredData.filter(p => (p.status || '').toLowerCase() === 'concluído'))} />
@@ -837,10 +855,11 @@ export default function App() {
                           >
                             <div className="bg-slate-50 rounded-[2.5rem] p-3 space-y-3 border border-slate-200 shadow-inner mx-2">
                         <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-slate-400">
-                          <div className="col-span-4">Projeto / Iniciativa</div>
-                          <div className="col-span-2">Fase</div>
+                          <div className="col-span-4">Projeto / Item</div>
+                          <div className="col-span-2">Equipe / Iniciativa</div>
+                          <div className="col-span-1">Fase</div>
                           <div className="col-span-2">Status</div>
-                          <div className="col-span-2">Farol</div>
+                          <div className="col-span-1">Farol</div>
                           <div className="col-span-1">Entrega</div>
                           <div className="col-span-1 text-right">Ações</div>
                         </div>
@@ -855,7 +874,7 @@ export default function App() {
                               <div className="md:col-span-4 space-y-0.5">
                                 <h4 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{project.name}</h4>
                                 <div className="flex items-center gap-2">
-                                  <p className="text-[11px] text-slate-400 font-medium line-clamp-1">{project.initiative}</p>
+                                  <p className="text-[11px] text-slate-400 font-medium line-clamp-1">{project.item}</p>
                                   <div className="flex items-center gap-1 shrink-0">
                                     <span className="text-[8px] font-bold px-1 py-0.5 bg-slate-50 text-slate-400 rounded border border-slate-100 uppercase">{project.code}</span>
                                     {project.priority && project.priority !== 'Normal' && <PriorityIcon priority={project.priority} />}
@@ -864,6 +883,12 @@ export default function App() {
                               </div>
 
                               <div className="md:col-span-2">
+                                <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Equipe / Iniciativa</p>
+                                <p className="text-[13px] font-semibold text-slate-900 truncate">{project.equipe}</p>
+                                <p className="text-[10px] text-slate-400 truncate">{project.initiative}</p>
+                              </div>
+
+                              <div className="md:col-span-1">
                                 <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Fase</p>
                                 <p className="text-[13px] font-semibold text-slate-600 truncate">{project.phase}</p>
                               </div>
@@ -871,7 +896,7 @@ export default function App() {
                                 <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Status</p>
                                 <StatusBadge status={project.status} />
                               </div>
-                              <div className="md:col-span-2">
+                              <div className="md:col-span-1">
                                 <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Farol</p>
                                 <FarolIndicator farol={project.farol} />
                               </div>
@@ -928,16 +953,73 @@ export default function App() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-5 sm:p-5 my-8">
               <div className="flex justify-between items-center mb-6 shrink-0">
-                <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Novo Projeto</h2>
+                <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Novo Registro</h2>
                 <button onClick={() => setIsCreateOpen(false)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-50 rounded-full"><X size={20} /></button>
               </div>
               <div className="overflow-y-auto max-h-[70vh] pr-2 custom-scrollbar">
               <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(newProject, false); }} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
-                    <FormField label="Nome do Projeto"><input required placeholder="Nome do Projeto" value={newProject.name} onChange={(e) => setNewProject({...newProject, name: e.target.value})} className={inputClass} /></FormField>
+                    <FormField label="Projeto Pai">
+                      <select
+                        required
+                        className={inputClass}
+                        value={newProject.name}
+                        onChange={(e) => {
+                          const projectName = e.target.value;
+                          const found = rawProjetos.find(p => p.projeto === projectName);
+                          setNewProject({
+                            ...newProject,
+                            name: projectName,
+                            item: '', // Reset item selection
+                            client: found?.itens?.[0]?.['Cliente'] || '',
+                            initiative: found?.itens?.[0]?.['INICIATIVA'] || '',
+                          });
+                        }}
+                      >
+                        <option value="">Selecione um projeto...</option>
+                        {rawProjetos.map(p => <option key={p.projeto} value={p.projeto}>{p.projeto}</option>)}
+                      </select>
+                    </FormField>
                   </div>
-                  <FormField label="Código do Projeto"><input placeholder="Ex: C00001" value={newProject.code} onChange={(e) => setNewProject({...newProject, code: e.target.value})} className={inputClass} /></FormField>
+
+                  <div className="md:col-span-2">
+                    <FormField label="Item / Entregável">
+                      <select
+                        required
+                        disabled={!newProject.name}
+                        className={inputClass}
+                        value={newProject.item}
+                        onChange={(e) => {
+                          const itemStr = e.target.value;
+                          const parent = rawProjetos.find(p => p.projeto === newProject.name);
+                          const itemData = parent?.itens?.find((i: any) => i.Item === itemStr);
+                          if (itemData) {
+                            setNewProject({
+                              ...newProject,
+                              item: itemStr,
+                              code: itemData['CODIGO PROJETO'] || '',
+                              initiative: itemData['INICIATIVA'] || '',
+                              client: itemData['Cliente'] || '',
+                              equipe: itemData['Equipe'] || '',
+                              status: itemData['STATUS'] || 'Backlog',
+                              phase: itemData['FASE'] || 'Backlog',
+                              farol: itemData['FAROL'] || 'No prazo',
+                              baseline: formatToDDMMYYYY(itemData['BASELINE'] || ''),
+                              deliveryDate: formatToDDMMYYYY(itemData['ENTREGA'] || ''),
+                            });
+                          }
+                        }}
+                      >
+                        <option value="">Selecione um item...</option>
+                        {rawProjetos.find(p => p.projeto === newProject.name)?.itens?.map((i: any) => (
+                          <option key={i.Item} value={i.Item}>{i.Item}</option>
+                        ))}
+                      </select>
+                    </FormField>
+                  </div>
+                  <FormField label="Código do Projeto"><input disabled value={newProject.code} className={`${inputClass} opacity-50 bg-slate-100`} /></FormField>
+                  <FormField label="Equipe"><input disabled value={newProject.equipe} className={`${inputClass} opacity-50 bg-slate-100`} /></FormField>
                   <FormField label="Iniciativa"><input required placeholder="Iniciativa" value={newProject.initiative} onChange={(e) => setNewProject({...newProject, initiative: e.target.value})} className={inputClass} /></FormField>
                   <FormField label="Cliente"><input required placeholder="Cliente" value={newProject.client} onChange={(e) => setNewProject({...newProject, client: e.target.value})} className={inputClass} /></FormField>
                   <FormField label="Prioridade">
@@ -999,16 +1081,20 @@ export default function App() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-5 sm:p-5 my-8">
               <div className="flex justify-between items-center mb-6 shrink-0">
-                <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Editar Projeto</h2>
+                <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Editar Registro</h2>
                 <button onClick={() => setIsEditOpen(false)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-50 rounded-full"><X size={20} /></button>
               </div>
               <div className="overflow-y-auto max-h-[70vh] pr-2 custom-scrollbar">
               <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(editingProject, true); }} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
-                    <FormField label="Nome do Projeto"><input required value={editingProject.name} onChange={(e) => setEditingProject({...editingProject, name: e.target.value})} className={inputClass} /></FormField>
+                    <FormField label="Projeto Pai"><input disabled value={editingProject.name} className={`${inputClass} opacity-50 bg-slate-100`} /></FormField>
+                  </div>
+                  <div className="md:col-span-2">
+                    <FormField label="Item / Entregável"><input disabled value={editingProject.item} className={`${inputClass} opacity-50 bg-slate-100`} /></FormField>
                   </div>
                   <FormField label="Código do Projeto"><input required value={editingProject.code} onChange={(e) => setEditingProject({...editingProject, code: e.target.value})} className={inputClass} /></FormField>
+                  <FormField label="Equipe"><input value={editingProject.equipe} onChange={(e) => setEditingProject({...editingProject, equipe: e.target.value})} className={inputClass} /></FormField>
                   <FormField label="Iniciativa"><input required value={editingProject.initiative} onChange={(e) => setEditingProject({...editingProject, initiative: e.target.value})} className={inputClass} /></FormField>
                   <FormField label="Cliente"><input required value={editingProject.client} onChange={(e) => setEditingProject({...editingProject, client: e.target.value})} className={inputClass} /></FormField>
                   <FormField label="Prioridade">

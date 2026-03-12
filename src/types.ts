@@ -16,6 +16,8 @@ export interface Project {
   client: string;
   code: string;
   name: string;
+  item: string;
+  equipe: string;
   phase: string;
   status: string;
   baseline: string; // Renamed to Data Base in UI

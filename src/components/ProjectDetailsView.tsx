@@ -157,19 +157,26 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, isSaving
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <h1 className="text-2xl sm:text-5xl font-bold text-slate-900 tracking-tight leading-tight sm:leading-none">{project.name}</h1>
+                <div className="space-y-1">
+                  <h1 className="text-2xl sm:text-5xl font-bold text-slate-900 tracking-tight leading-tight sm:leading-none">{project.name}</h1>
+                  <p className="text-lg font-medium text-slate-400">{project.item}</p>
+                </div>
                 {project.priority && project.priority !== 'Normal' && <PriorityIcon priority={project.priority} />}
               </div>
             </div>
             <button onClick={onEdit} className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
-              <Pencil size={18} /> Editar Projeto
+              <Pencil size={18} /> Editar Registro
             </button>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 border-t border-slate-100 pt-8 mt-4 gap-4 md:gap-0">
+          <div className="grid grid-cols-2 md:grid-cols-6 border-t border-slate-100 pt-8 mt-4 gap-4 md:gap-0">
             <div className="space-y-1 md:pr-4">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Código</p>
               <p className="text-xl font-bold text-slate-900 truncate">{project.code}</p>
+            </div>
+            <div className="space-y-1 md:border-l md:border-slate-100 md:px-4">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Equipe</p>
+              <p className="text-xl font-bold text-slate-900 truncate">{project.equipe || 'N/A'}</p>
             </div>
             <div className="space-y-1 md:border-l md:border-slate-100 md:px-4">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Cliente</p>
