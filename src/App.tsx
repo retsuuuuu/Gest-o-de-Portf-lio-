@@ -50,16 +50,16 @@ const MultiSelect = React.memo(({ label, options, selected, onChange }: { label:
   };
 
   return (
-    <div className="space-y-1 relative" ref={containerRef}>
-      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">{label}</label>
+    <div className="relative group/filter" ref={containerRef}>
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-sm font-semibold flex justify-between items-center cursor-pointer hover:border-indigo-200 transition-all"
+        className="flex items-center gap-2 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-500 cursor-pointer hover:border-indigo-300 hover:bg-white hover:text-indigo-600 transition-all"
       >
-        <span className="truncate max-w-[150px]">
-          {selected.includes('Todos') ? `Todos (${options.length - 1})` : selected.join(', ')}
+        <Filter size={10} className="text-slate-400 group-hover/filter:text-indigo-400" />
+        <span className="truncate max-w-[70px]">
+          {selected.includes('Todos') ? label : selected.join(', ')}
         </span>
-        <Filter size={14} className="text-slate-400" />
+        <ChevronRight size={10} className={`text-slate-300 transition-transform ${isOpen ? 'rotate-90 text-indigo-400' : ''}`} />
       </div>
 
       <AnimatePresence>
@@ -107,7 +107,7 @@ const StatCard = React.memo(({ label, value, icon: Icon, color, onClick, variant
     </div>
 
     <div className="flex items-end justify-between mt-auto">
-      <p className={`text-4xl font-medium ${variant === 'rose' ? 'text-rose-600' : 'text-slate-900'} tracking-tight leading-none`}>{value}</p>
+      <p className={`text-4xl font-semibold ${variant === 'rose' ? 'text-rose-600' : 'text-slate-900'} tracking-tight leading-none`}>{value}</p>
       {delayedCount > 0 && (
         <div className="flex items-center gap-1 px-1.5 py-0.5 bg-rose-100 text-rose-600 rounded-md text-[9px] font-black border border-rose-200 animate-pulse">
           <Clock size={10} strokeWidth={3} />
@@ -201,25 +201,25 @@ const getClientBrandStyles = (client: string, isExpanded: boolean) => {
   };
 
   if (c.includes('CLARO')) return {
-    banner: 'bg-rose-600 shadow-rose-200/50',
+    banner: 'bg-red-600 shadow-red-200/50',
     text: 'text-white',
-    subtext: 'text-rose-200',
+    subtext: 'text-red-100',
     indicator: 'bg-white',
     badge: 'bg-white/20 text-white border-white/30'
   };
   if (c.includes('TIM')) return {
-    banner: 'bg-blue-900 shadow-blue-200/50',
+    banner: 'bg-blue-950 shadow-blue-200/50',
     text: 'text-white',
     subtext: 'text-blue-300',
-    indicator: 'bg-blue-400',
+    indicator: 'bg-blue-500',
     badge: 'bg-white/10 text-white border-white/20'
   };
   if (c.includes('VAREJO')) return {
-    banner: 'bg-amber-400 shadow-amber-100',
-    text: 'text-amber-950',
-    subtext: 'text-amber-800/60',
-    indicator: 'bg-amber-900',
-    badge: 'bg-amber-950/10 text-amber-950 border-amber-950/20'
+    banner: 'bg-yellow-400 shadow-yellow-100',
+    text: 'text-yellow-950',
+    subtext: 'text-yellow-900/60',
+    indicator: 'bg-yellow-700',
+    badge: 'bg-yellow-950/10 text-yellow-950 border-yellow-950/20'
   };
 
   return {
@@ -707,70 +707,68 @@ export default function App() {
                 </button>
               </div>
 
-              {activeSubTab === 'Ativos' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                <motion.div
-                    animate={stats.atrasados > 0 ? { scale: [1, 1.02, 1] } : {}}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="h-full rounded-2xl transition-all"
-                >
-                    <StatCard
-                      label="ATRASADOS (GERAL)"
-                      value={stats.atrasados}
-                      icon={AlertCircle}
-                      color="text-rose-600"
-                      variant="rose"
-                      onClick={() => handleOpenListModal("Projetos Atrasados", filteredData.filter(p =>
-                        (p.farol || '').toLowerCase().includes('atrasado') &&
-                        (p.status || '').toLowerCase() !== 'backlog'
-                      ))}
-                    />
-                </motion.div>
-                <StatCard label="EM ANDAMENTO" value={stats.emAndamento} delayedCount={stats.delayedPerStatus.emAndamento} icon={Clock} color="text-blue-600" onClick={() => handleOpenListModal("Projetos em Andamento", filteredData.filter(p => (p.status || '').toLowerCase() === 'em andamento'))} />
-                <StatCard label="PAUSADOS" value={stats.pausados} delayedCount={stats.delayedPerStatus.pausados} icon={PauseCircle} color="text-amber-600" onClick={() => handleOpenListModal("Projetos Pausados", filteredData.filter(p => (p.status || '').toLowerCase() === 'pausado'))} />
-                <StatCard label="IMPEDIMENTOS" value={stats.impedimento} delayedCount={stats.delayedPerStatus.impedimento} icon={ShieldAlert} color="text-slate-600" onClick={() => handleOpenListModal("Projetos em Impedimento", filteredData.filter(p => (p.status || '').toLowerCase() === 'impedimento'))} />
-                <StatCard label="CONCLUÍDOS" value={stats.concluidos} delayedCount={stats.delayedPerStatus.concluidos} icon={CheckCircle2} color="text-emerald-600" onClick={() => handleOpenListModal("Projetos Concluídos", filteredData.filter(p => (p.status || '').toLowerCase() === 'concluído'))} />
-              </div>
-              ) : (
-                <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
-                      <LayoutDashboard size={24} />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Projetos em Backlog</h3>
-                      <p className="text-sm text-slate-500">Iniciativas aguardando priorização e briefing inicial</p>
-                    </div>
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div className="flex-1 min-w-0">
+                {activeSubTab === 'Ativos' ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    <motion.div
+                        animate={stats.atrasados > 0 ? { scale: [1, 1.02, 1] } : {}}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        className="h-full rounded-2xl transition-all"
+                    >
+                        <StatCard
+                          label="ATRASADOS"
+                          value={stats.atrasados}
+                          icon={AlertCircle}
+                          color="text-rose-600"
+                          variant="rose"
+                          onClick={() => handleOpenListModal("Projetos Atrasados", filteredData.filter(p =>
+                            (p.farol || '').toLowerCase().includes('atrasado') &&
+                            (p.status || '').toLowerCase() !== 'backlog'
+                          ))}
+                        />
+                    </motion.div>
+                    <StatCard label="ATIVOS" value={stats.emAndamento} delayedCount={stats.delayedPerStatus.emAndamento} icon={Clock} color="text-blue-600" onClick={() => handleOpenListModal("Projetos em Andamento", filteredData.filter(p => (p.status || '').toLowerCase() === 'em andamento'))} />
+                    <StatCard label="PAUSADOS" value={stats.pausados} delayedCount={stats.delayedPerStatus.pausados} icon={PauseCircle} color="text-amber-600" onClick={() => handleOpenListModal("Projetos Pausados", filteredData.filter(p => (p.status || '').toLowerCase() === 'pausado'))} />
+                    <StatCard label="IMPEDIMENTOS" value={stats.impedimento} delayedCount={stats.delayedPerStatus.impedimento} icon={ShieldAlert} color="text-slate-600" onClick={() => handleOpenListModal("Projetos em Impedimento", filteredData.filter(p => (p.status || '').toLowerCase() === 'impedimento'))} />
+                    <StatCard label="CONCLUÍDOS" value={stats.concluidos} delayedCount={stats.delayedPerStatus.concluidos} icon={CheckCircle2} color="text-emerald-600" onClick={() => handleOpenListModal("Projetos Concluídos", filteredData.filter(p => (p.status || '').toLowerCase() === 'concluído'))} />
                   </div>
-                  <div className="flex items-center gap-8">
-                    <div className="text-right">
-                      <p className="text-4xl font-black text-rose-600 tracking-tighter leading-none">
-                        {filteredData.filter(p => (p.status || '').toLowerCase() === 'backlog' && (p.farol || '').toLowerCase().includes('atrasado')).length}
-                      </p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Atrasados</p>
+                  ) : (
+                    <div className="bg-white px-6 py-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+                          <LayoutDashboard size={20} />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight leading-none mb-1">Backlog do Portfólio</h3>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Iniciativas aguardando priorização</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-6">
+                        <div className="text-right">
+                          <p className="text-2xl font-black text-rose-600 tracking-tighter leading-none">
+                            {filteredData.filter(p => (p.status || '').toLowerCase() === 'backlog' && (p.farol || '').toLowerCase().includes('atrasado')).length}
+                          </p>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Atrasados</p>
+                        </div>
+                        <div className="w-px h-8 bg-slate-100" />
+                        <div className="text-right">
+                          <p className="text-2xl font-black text-indigo-600 tracking-tighter leading-none">
+                            {filteredData.filter(p => (p.status || '').toLowerCase() === 'backlog').length}
+                          </p>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="w-px h-10 bg-slate-100" />
-                    <div className="text-right">
-                      <p className="text-4xl font-black text-indigo-600 tracking-tighter leading-none">
-                        {filteredData.filter(p => (p.status || '').toLowerCase() === 'backlog').length}
-                      </p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total no Backlog</p>
-                    </div>
-                  </div>
+                  )}
                 </div>
-              )}
 
-                <div className="flex flex-wrap md:flex-nowrap items-end gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                  <div className="flex-1 min-w-[140px]">
-                    <MultiSelect label="Status" options={['Todos', ...ALL_STATUS]} selected={statusFilter} onChange={setStatusFilter} />
-                  </div>
-                  <div className="flex-1 min-w-[140px]">
-                    <MultiSelect label="Farol" options={['Todos', ...ALL_FAROL]} selected={farolFilter} onChange={setFarolFilter} />
-                  </div>
-                  <div className="flex-1 min-w-[140px]">
-                    <MultiSelect label="Cliente" options={uniqueClients} selected={clientFilter} onChange={setClientFilter} />
-                  </div>
+                <div className="flex flex-wrap md:flex-nowrap items-center gap-2 pb-1 shrink-0">
+                  <MultiSelect label="Status" options={['Todos', ...ALL_STATUS]} selected={statusFilter} onChange={setStatusFilter} />
+                  <MultiSelect label="Farol" options={['Todos', ...ALL_FAROL]} selected={farolFilter} onChange={setFarolFilter} />
+                  <MultiSelect label="Cliente" options={uniqueClients} selected={clientFilter} onChange={setClientFilter} />
                 </div>
+              </div>
 
               <section className="space-y-6">
                 <div className="flex items-center justify-between">
