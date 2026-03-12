@@ -278,6 +278,7 @@ export default function App() {
   const [activeSubTab, setActiveSubTab] = useState<'Ativos' | 'Backlog'>('Ativos');
   const [rawProjetos, setRawProjetos] = useState<any[]>([]);
   const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>(['Todos']);
   const [farolFilter, setFarolFilter] = useState<string[]>(['Todos']);
@@ -554,6 +555,8 @@ export default function App() {
     return projectsData.filter(p => {
       const matchesSearch = !searchQuery ||
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.item.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.equipe.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.initiative.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.code.toLowerCase().includes(searchQuery.toLowerCase());
@@ -571,6 +574,15 @@ export default function App() {
       const next = new Set(prev);
       if (next.has(client)) next.delete(client);
       else next.add(client);
+      return next;
+    });
+  }, []);
+
+  const toggleProject = useCallback((projectKey: string) => {
+    setExpandedProjects(prev => {
+      const next = new Set(prev);
+      if (next.has(projectKey)) next.delete(projectKey);
+      else next.add(projectKey);
       return next;
     });
   }, []);
@@ -807,15 +819,16 @@ export default function App() {
                       const isBacklog = status === 'backlog';
 
                       if ((activeSubTab === 'Backlog' && isBacklog) || (activeSubTab === 'Ativos' && !isBacklog)) {
-                        if (!acc[client]) acc[client] = [];
-                        acc[client].push(p);
+                        if (!acc[client]) acc[client] = {};
+                        if (!acc[client][p.name]) acc[client][p.name] = [];
+                        acc[client][p.name].push(p);
                       }
                       return acc;
-                    }, {} as Record<string, Project[]>)
-                  ).sort(([a], [b]) => a.localeCompare(b)).map(([client, projectsList]) => {
-                    const projects = projectsList as Project[];
-                    const isExpanded = expandedClients.has(client);
-                    const brand = getClientBrandStyles(client, isExpanded);
+                    }, {} as Record<string, Record<string, Project[]>>)
+                  ).sort(([a], [b]) => a.localeCompare(b)).map(([client, clientProjects]) => {
+                    const totalItems = Object.values(clientProjects).flat().length;
+                    const isClientExpanded = expandedClients.has(client);
+                    const brand = getClientBrandStyles(client, isClientExpanded);
                     return (
                     <div key={client} className="space-y-4 pt-4 first:pt-2">
                       <div
@@ -823,106 +836,119 @@ export default function App() {
                         className={`flex items-center justify-between px-6 py-4 rounded-[2rem] shadow-lg transition-all cursor-pointer relative overflow-hidden group mx-2 ${brand.banner}`}
                       >
                         <div className="flex items-center gap-5 relative z-10">
-                          <div className={`w-1.5 h-10 rounded-full transition-all duration-500 ${brand.indicator} ${isExpanded ? 'scale-y-110' : ''}`} />
+                          <div className={`w-1.5 h-10 rounded-full transition-all duration-500 ${brand.indicator} ${isClientExpanded ? 'scale-y-110' : ''}`} />
                           <div>
                             <h3 className={`text-xl font-black tracking-tight uppercase leading-none mb-1 transition-colors ${brand.text}`}>{client}</h3>
                             <p className={`text-[10px] font-bold uppercase tracking-[0.3em] leading-none transition-colors ${brand.subtext}`}>Organização Parceira</p>
                           </div>
                           <div className={`ml-6 px-4 py-1.5 rounded-2xl text-[10px] font-black shadow-lg border transition-all ${brand.badge}`}>
-                            {projects.length} PROJETOS
+                            {totalItems} ITENS
                           </div>
                         </div>
                         <div className="flex items-center gap-4 relative z-10">
-                          <ChevronRight className={`transition-transform duration-500 ${isExpanded ? 'rotate-90' : ''} ${isExpanded || brand.banner.includes('bg-') ? 'text-white' : 'text-slate-300 group-hover:text-indigo-400'}`} size={24} />
+                          <ChevronRight className={`transition-transform duration-500 ${isClientExpanded ? 'rotate-90' : ''} ${isClientExpanded || brand.banner.includes('bg-') ? 'text-white' : 'text-slate-300 group-hover:text-indigo-400'}`} size={24} />
                         </div>
-                        {isExpanded && (
-                          <>
-                            <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-indigo-500/10 to-transparent pointer-events-none" />
-                            <div className="absolute -right-4 -top-6 text-white/5 font-black text-7xl tracking-tighter uppercase pointer-events-none select-none">
-                              {client.slice(0, 3)}
-                            </div>
-                          </>
-                        )}
                       </div>
 
                       <AnimatePresence>
-                        {isExpanded && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                            animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
-                            exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                            className="overflow-hidden"
-                          >
-                            <div className="bg-slate-50 rounded-[2.5rem] p-3 space-y-3 border border-slate-200 shadow-inner mx-2">
-                        <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-slate-400">
-                          <div className="col-span-4">Projeto / Item</div>
-                          <div className="col-span-2">Equipe / Iniciativa</div>
-                          <div className="col-span-1">Fase</div>
-                          <div className="col-span-2">Status</div>
-                          <div className="col-span-1">Farol</div>
-                          <div className="col-span-1">Entrega</div>
-                          <div className="col-span-1 text-right">Ações</div>
-                        </div>
-
-                        {projects.map((project: Project) => (
-                          <div
-                            key={project.id}
-                            onClick={() => { setSelectedProject(project); setView('detalhes'); }}
-                            className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all cursor-pointer group relative overflow-hidden"
-                          >
-                            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                              <div className="md:col-span-4 space-y-0.5">
-                                <h4 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{project.name}</h4>
-                                <div className="flex items-center gap-2">
-                                  <p className="text-[11px] text-slate-400 font-medium line-clamp-1">{project.item}</p>
-                                  <div className="flex items-center gap-1 shrink-0">
-                                    <span className="text-[8px] font-bold px-1 py-0.5 bg-slate-50 text-slate-400 rounded border border-slate-100 uppercase">{project.code}</span>
-                                    {project.priority && project.priority !== 'Normal' && <PriorityIcon priority={project.priority} />}
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="md:col-span-2">
-                                <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Equipe / Iniciativa</p>
-                                <p className="text-[13px] font-semibold text-slate-900 truncate">{project.equipe}</p>
-                                <p className="text-[10px] text-slate-400 truncate">{project.initiative}</p>
-                              </div>
-
-                              <div className="md:col-span-1">
-                                <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Fase</p>
-                                <p className="text-[13px] font-semibold text-slate-600 truncate">{project.phase}</p>
-                              </div>
-                              <div className="md:col-span-2">
-                                <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Status</p>
-                                <StatusBadge status={project.status} />
-                              </div>
-                              <div className="md:col-span-1">
-                                <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Farol</p>
-                                <FarolIndicator farol={project.farol} />
-                              </div>
-
-                              <div className="md:col-span-1">
-                                <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Entrega</p>
-                                <p className="text-[12px] font-bold text-slate-500">{project.deliveryDate || project.replannedDate || project.baseline || '---'}</p>
-                              </div>
-
-                                <div className="md:col-span-1 flex items-center justify-end gap-1 md:border-l border-slate-50 md:pl-2">
-                                  <button onClick={(e) => { e.stopPropagation(); setEditingProject(project); setIsEditOpen(true); }} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Pencil size={16} /></button>
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); handleDeleteProject(project); }}
-                                    disabled={deletingProjectId === project.id}
-                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                        {isClientExpanded && (
+                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden space-y-4 px-4">
+                            {Object.entries(clientProjects).sort(([a], [b]) => a.localeCompare(b)).map(([projectName, items]) => {
+                              const projectKey = `${client}-${projectName}`;
+                              const isProjectExpanded = expandedProjects.has(projectKey);
+                              return (
+                                <div key={projectName} className="space-y-2">
+                                  <div
+                                    onClick={() => toggleProject(projectKey)}
+                                    className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl shadow-sm cursor-pointer hover:border-indigo-200 transition-all group"
                                   >
-                                    {deletingProjectId === project.id ? <div className="w-3.5 h-3.5 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" /> : <Trash2 size={16} />}
-                                  </button>
+                                    <div className="flex items-center gap-4">
+                                      <div className="w-10 h-10 bg-slate-50 text-indigo-600 rounded-xl flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                                        <LayoutDashboard size={20} />
+                                      </div>
+                                      <div>
+                                        <h4 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{projectName}</h4>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{items.length} Itens atrelados</p>
+                                      </div>
+                                    </div>
+                                    <ChevronRight className={`text-slate-300 transition-transform duration-300 ${isProjectExpanded ? 'rotate-90 text-indigo-600' : ''}`} size={20} />
+                                  </div>
+
+                                  <AnimatePresence>
+                                    {isProjectExpanded && (
+                                      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="pl-4 space-y-2">
+                                        <div className="bg-slate-50/50 rounded-3xl p-3 border border-slate-100 shadow-inner">
+                                          <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                            <div className="col-span-4">Item</div>
+                                            <div className="col-span-2">Equipe</div>
+                                            <div className="col-span-1">Fase</div>
+                                            <div className="col-span-2">Status</div>
+                                            <div className="col-span-1">Farol</div>
+                                            <div className="col-span-1">Entrega</div>
+                                            <div className="col-span-1 text-right">Ações</div>
+                                          </div>
+
+                                          {items.map((project: Project) => (
+                                            <div
+                                              key={project.id}
+                                              onClick={() => { setSelectedProject(project); setView('detalhes'); }}
+                                              className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all cursor-pointer group relative overflow-hidden mb-2 last:mb-0"
+                                            >
+                                              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                                                <div className="md:col-span-4 space-y-0.5">
+                                                  <h4 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{project.item}</h4>
+                                                  <div className="flex items-center gap-1 shrink-0">
+                                                    <span className="text-[8px] font-bold px-1 py-0.5 bg-slate-50 text-slate-400 rounded border border-slate-100 uppercase">{project.code}</span>
+                                                    {project.priority && project.priority !== 'Normal' && <PriorityIcon priority={project.priority} />}
+                                                  </div>
+                                                </div>
+
+                                                <div className="md:col-span-2">
+                                                  <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Equipe</p>
+                                                  <p className="text-[13px] font-semibold text-slate-900 truncate">{project.equipe}</p>
+                                                </div>
+
+                                                <div className="md:col-span-1">
+                                                  <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Fase</p>
+                                                  <p className="text-[13px] font-semibold text-slate-600 truncate">{project.phase}</p>
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                  <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Status</p>
+                                                  <StatusBadge status={project.status} />
+                                                </div>
+                                                <div className="md:col-span-1">
+                                                  <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Farol</p>
+                                                  <FarolIndicator farol={project.farol} />
+                                                </div>
+
+                                                <div className="md:col-span-1">
+                                                  <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Entrega</p>
+                                                  <p className="text-[12px] font-bold text-slate-500">{project.deliveryDate || project.replannedDate || project.baseline || '---'}</p>
+                                                </div>
+
+                                                  <div className="md:col-span-1 flex items-center justify-end gap-1 md:border-l border-slate-50 md:pl-2">
+                                                    <button onClick={(e) => { e.stopPropagation(); setEditingProject(project); setIsEditOpen(true); }} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Pencil size={16} /></button>
+                                                    <button
+                                                      onClick={(e) => { e.stopPropagation(); handleDeleteProject(project); }}
+                                                      disabled={deletingProjectId === project.id}
+                                                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                                    >
+                                                      {deletingProjectId === project.id ? <div className="w-3.5 h-3.5 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" /> : <Trash2 size={16} />}
+                                                    </button>
+                                                  </div>
+                                                </div>
+                                              {project.farol.toLowerCase().includes('atrasado') && (
+                                                <div className="absolute top-0 left-0 w-1 h-full bg-rose-500" />
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
                                 </div>
-                              </div>
-                            {project.farol.toLowerCase().includes('atrasado') && (
-                              <div className="absolute top-0 left-0 w-1 h-full bg-rose-500" />
-                            )}
-                          </div>
-                        ))}
-                            </div>
+                              );
+                            })}
                           </motion.div>
                         )}
                       </AnimatePresence>
