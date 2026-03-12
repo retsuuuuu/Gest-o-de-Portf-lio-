@@ -68,7 +68,7 @@ const MultiSelect = React.memo(({ label, options, selected, onChange }: { label:
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-xl shadow-xl p-4 max-h-64 overflow-y-auto custom-scrollbar"
+            className="absolute z-50 top-full right-0 mt-2 bg-white border border-slate-100 rounded-xl shadow-xl p-4 min-w-[180px] max-h-64 overflow-y-auto custom-scrollbar"
           >
             {options.map(opt => (
               <label key={opt} className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer group">
