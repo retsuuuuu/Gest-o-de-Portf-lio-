@@ -50,16 +50,16 @@ const MultiSelect = React.memo(({ label, options, selected, onChange }: { label:
   };
 
   return (
-    <div className="space-y-3 relative" ref={containerRef}>
-      <label className="text-[13px] font-bold text-slate-500 uppercase tracking-widest">{label}</label>
+    <div className="space-y-1 relative" ref={containerRef}>
+      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">{label}</label>
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-base font-medium flex justify-between items-center cursor-pointer hover:border-indigo-200 transition-all"
+        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-sm font-semibold flex justify-between items-center cursor-pointer hover:border-indigo-200 transition-all"
       >
         <span className="truncate max-w-[150px]">
           {selected.includes('Todos') ? `Todos (${options.length - 1})` : selected.join(', ')}
         </span>
-        <Filter size={16} className="text-slate-400" />
+        <Filter size={14} className="text-slate-400" />
       </div>
 
       <AnimatePresence>
@@ -189,6 +189,47 @@ const FarolIndicator = React.memo(({ farol }: { farol: string }) => {
     </div>
   );
 });
+
+const getClientBrandStyles = (client: string, isExpanded: boolean) => {
+  const c = client.toUpperCase();
+  if (isExpanded) return {
+    banner: 'bg-slate-900 shadow-slate-200/50',
+    text: 'text-white',
+    subtext: 'text-slate-400',
+    indicator: 'bg-indigo-500',
+    badge: 'bg-indigo-600 text-white border-indigo-500/30'
+  };
+
+  if (c.includes('CLARO')) return {
+    banner: 'bg-rose-600 shadow-rose-200/50',
+    text: 'text-white',
+    subtext: 'text-rose-200',
+    indicator: 'bg-white',
+    badge: 'bg-white/20 text-white border-white/30'
+  };
+  if (c.includes('TIM')) return {
+    banner: 'bg-blue-900 shadow-blue-200/50',
+    text: 'text-white',
+    subtext: 'text-blue-300',
+    indicator: 'bg-blue-400',
+    badge: 'bg-white/10 text-white border-white/20'
+  };
+  if (c.includes('VAREJO')) return {
+    banner: 'bg-amber-400 shadow-amber-100',
+    text: 'text-amber-950',
+    subtext: 'text-amber-800/60',
+    indicator: 'bg-amber-900',
+    badge: 'bg-amber-950/10 text-amber-950 border-amber-950/20'
+  };
+
+  return {
+    banner: 'bg-white border border-slate-100 hover:border-indigo-200 shadow-slate-100',
+    text: 'text-slate-900 group-hover:text-indigo-600',
+    subtext: 'text-slate-400',
+    indicator: 'bg-slate-200 group-hover:bg-indigo-400',
+    badge: 'bg-slate-50 text-slate-500 border-slate-100 group-hover:bg-indigo-50 group-hover:text-indigo-600'
+  };
+};
 
 export default function App() {
   const { user } = useUser();
@@ -719,10 +760,16 @@ export default function App() {
                 </div>
               )}
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-                  <MultiSelect label="Status" options={['Todos', ...ALL_STATUS]} selected={statusFilter} onChange={setStatusFilter} />
-                  <MultiSelect label="Farol" options={['Todos', ...ALL_FAROL]} selected={farolFilter} onChange={setFarolFilter} />
-                  <MultiSelect label="Cliente" options={uniqueClients} selected={clientFilter} onChange={setClientFilter} />
+                <div className="flex flex-wrap md:flex-nowrap items-end gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                  <div className="flex-1 min-w-[140px]">
+                    <MultiSelect label="Status" options={['Todos', ...ALL_STATUS]} selected={statusFilter} onChange={setStatusFilter} />
+                  </div>
+                  <div className="flex-1 min-w-[140px]">
+                    <MultiSelect label="Farol" options={['Todos', ...ALL_FAROL]} selected={farolFilter} onChange={setFarolFilter} />
+                  </div>
+                  <div className="flex-1 min-w-[140px]">
+                    <MultiSelect label="Cliente" options={uniqueClients} selected={clientFilter} onChange={setClientFilter} />
+                  </div>
                 </div>
 
               <section className="space-y-6">
@@ -752,24 +799,25 @@ export default function App() {
                   ).sort(([a], [b]) => a.localeCompare(b)).map(([client, projectsList]) => {
                     const projects = projectsList as Project[];
                     const isExpanded = expandedClients.has(client);
+                    const brand = getClientBrandStyles(client, isExpanded);
                     return (
                     <div key={client} className="space-y-4 pt-4 first:pt-2">
                       <div
                         onClick={() => toggleClient(client)}
-                        className={`flex items-center justify-between px-6 py-4 rounded-[2rem] shadow-lg transition-all cursor-pointer relative overflow-hidden group mx-2 ${isExpanded ? 'bg-slate-900 shadow-slate-200/50' : 'bg-white border border-slate-100 hover:border-indigo-200 shadow-slate-100'}`}
+                        className={`flex items-center justify-between px-6 py-4 rounded-[2rem] shadow-lg transition-all cursor-pointer relative overflow-hidden group mx-2 ${brand.banner}`}
                       >
                         <div className="flex items-center gap-5 relative z-10">
-                          <div className={`w-1.5 h-10 rounded-full transition-all duration-500 ${isExpanded ? 'bg-indigo-500 scale-y-110' : 'bg-slate-200 group-hover:bg-indigo-400'}`} />
+                          <div className={`w-1.5 h-10 rounded-full transition-all duration-500 ${brand.indicator} ${isExpanded ? 'scale-y-110' : ''}`} />
                           <div>
-                            <h3 className={`text-xl font-black tracking-tight uppercase leading-none mb-1 transition-colors ${isExpanded ? 'text-white' : 'text-slate-900 group-hover:text-indigo-600'}`}>{client}</h3>
-                            <p className={`text-[10px] font-bold uppercase tracking-[0.3em] leading-none transition-colors ${isExpanded ? 'text-slate-400' : 'text-slate-400'}`}>Organização Parceira</p>
+                            <h3 className={`text-xl font-black tracking-tight uppercase leading-none mb-1 transition-colors ${brand.text}`}>{client}</h3>
+                            <p className={`text-[10px] font-bold uppercase tracking-[0.3em] leading-none transition-colors ${brand.subtext}`}>Organização Parceira</p>
                           </div>
-                          <div className={`ml-6 px-4 py-1.5 rounded-2xl text-[10px] font-black shadow-lg border transition-all ${isExpanded ? 'bg-indigo-600 text-white shadow-indigo-900/40 border-indigo-500/30' : 'bg-slate-50 text-slate-500 border-slate-100 group-hover:bg-indigo-50 group-hover:text-indigo-600'}`}>
+                          <div className={`ml-6 px-4 py-1.5 rounded-2xl text-[10px] font-black shadow-lg border transition-all ${brand.badge}`}>
                             {projects.length} PROJETOS
                           </div>
                         </div>
                         <div className="flex items-center gap-4 relative z-10">
-                          <ChevronRight className={`transition-transform duration-500 ${isExpanded ? 'rotate-90 text-white' : 'text-slate-300 group-hover:text-indigo-400'}`} size={24} />
+                          <ChevronRight className={`transition-transform duration-500 ${isExpanded ? 'rotate-90' : ''} ${isExpanded || brand.banner.includes('bg-') ? 'text-white' : 'text-slate-300 group-hover:text-indigo-400'}`} size={24} />
                         </div>
                         {isExpanded && (
                           <>
