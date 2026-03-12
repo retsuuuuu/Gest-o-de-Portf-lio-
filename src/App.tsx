@@ -707,8 +707,8 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div className="flex-1 min-w-0">
+              <div className="space-y-4">
+                <div className="w-full">
                 {activeSubTab === 'Ativos' ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                     <motion.div
@@ -763,7 +763,7 @@ export default function App() {
                   )}
                 </div>
 
-                <div className="flex flex-wrap md:flex-nowrap items-center gap-2 pb-1 shrink-0">
+                <div className="flex justify-end items-center gap-2">
                   <MultiSelect label="Status" options={['Todos', ...ALL_STATUS]} selected={statusFilter} onChange={setStatusFilter} />
                   <MultiSelect label="Farol" options={['Todos', ...ALL_FAROL]} selected={farolFilter} onChange={setFarolFilter} />
                   <MultiSelect label="Cliente" options={uniqueClients} selected={clientFilter} onChange={setClientFilter} />
