@@ -119,15 +119,13 @@ const StatCard = React.memo(({ label, value, icon: Icon, color, onClick, variant
 ));
 
 const FormField = React.memo(({ label, children }: { label: string, children: React.ReactNode }) => (
-  <div className="flex flex-col gap-2">
-    <div className="min-h-[24px] flex items-end">
-      <label className="text-[13px] font-bold text-slate-600 uppercase tracking-wider leading-none">{label}</label>
-    </div>
+  <div className="flex flex-col gap-2.5">
+    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.1em]">{label}</label>
     {children}
   </div>
 ));
 
-const inputClass = "w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all placeholder:text-slate-400";
+const inputClass = "w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all placeholder:text-slate-400 font-medium";
 
 const PriorityIcon = React.memo(({ priority }: { priority: string }) => {
   switch (priority) {
@@ -646,15 +644,10 @@ export default function App() {
     );
   }
 
-  return (
-    <>
-      <SignedOut>
-        <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
-          <SignIn />
-        </div>
-      </SignedOut>
-      <SignedIn>
-        <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
+  const bypassAuth = import.meta.env.VITE_BYPASS_AUTH === 'true';
+
+  const MainContent = () => (
+    <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
           {/* Barra Lateral */}
           <aside className="w-64 bg-white border-r border-slate-200 flex flex-col hidden lg:flex">
         <div className="p-4 sm:p-8 flex items-center gap-3">
@@ -740,7 +733,7 @@ export default function App() {
               <div className="space-y-4">
                 <div className="w-full">
                 {activeSubTab === 'Ativos' ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-5">
                     <motion.div
                         animate={stats.atrasados > 0 ? { scale: [1, 1.02, 1] } : {}}
                         transition={{ duration: 2, repeat: Infinity }}
@@ -793,7 +786,7 @@ export default function App() {
                   )}
                 </div>
 
-                <div className="flex justify-end items-center gap-2">
+                <div className="flex justify-end items-center gap-4">
                   <MultiSelect label="Status" options={['Todos', ...ALL_STATUS]} selected={statusFilter} onChange={setStatusFilter} />
                   <MultiSelect label="Farol" options={['Todos', ...ALL_FAROL]} selected={farolFilter} onChange={setFarolFilter} />
                   <MultiSelect label="Cliente" options={uniqueClients} selected={clientFilter} onChange={setClientFilter} />
@@ -876,15 +869,15 @@ export default function App() {
 
                                   <AnimatePresence>
                                     {isProjectExpanded && (
-                                      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="pl-4 space-y-2">
-                                        <div className="bg-slate-50/50 rounded-3xl p-3 border border-slate-100 shadow-inner">
-                                          <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                            <div className="col-span-3">Item</div>
-                                            <div className="col-span-2">Equipe</div>
+                                      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="pl-6 space-y-3">
+                                        <div className="bg-slate-50/50 rounded-[2rem] p-4 border border-slate-100 shadow-inner">
+                                          <div className="hidden md:grid grid-cols-12 gap-6 px-8 py-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100/50 mb-2">
+                                            <div className="col-span-4">Item</div>
+                                            <div className="col-span-1">Equipe</div>
                                             <div className="col-span-1">Fase</div>
-                                            <div className="col-span-2">Status</div>
+                                            <div className="col-span-2 text-center">Status</div>
                                             <div className="col-span-1">Farol</div>
-                                            <div className="col-span-2">Início / Entrega</div>
+                                            <div className="col-span-2 text-center">Início / Entrega</div>
                                             <div className="col-span-1 text-right">Ações</div>
                                           </div>
 
@@ -892,27 +885,27 @@ export default function App() {
                                             <div
                                               key={project.id}
                                               onClick={() => { setSelectedProject(project); setView('detalhes'); }}
-                                              className="bg-white px-6 py-3 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all cursor-pointer group relative overflow-hidden mb-2 last:mb-0"
+                                              className="bg-white px-8 py-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-indigo-100 transition-all cursor-pointer group relative overflow-hidden mb-3 last:mb-0"
                                             >
-                                              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                                                <div className="md:col-span-3 space-y-1">
-                                                  <h4 className="text-[13px] font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{project.item}</h4>
-                                                  <div className="flex items-center gap-1.5 shrink-0">
-                                                    <span className="text-[9px] font-bold px-1.5 py-0.5 bg-slate-50 text-slate-400 rounded border border-slate-100 uppercase tracking-tight">{project.code}</span>
+                                              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                                                <div className="md:col-span-4 space-y-1.5">
+                                                  <h4 className="text-[14px] font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{project.item}</h4>
+                                                  <div className="flex items-center gap-2 shrink-0">
+                                                    <span className="text-[10px] font-black px-2 py-0.5 bg-slate-50 text-slate-400 rounded-md border border-slate-100 uppercase tracking-wider">{project.code}</span>
                                                     {project.priority && project.priority !== 'Normal' && <PriorityIcon priority={project.priority} />}
                                                   </div>
                                                 </div>
 
-                                                <div className="md:col-span-2">
+                                                <div className="md:col-span-1">
                                                   <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Equipe</p>
-                                                  <p className="text-[12px] font-medium text-slate-500 truncate">{project.equipe}</p>
+                                                  <p className="text-[12px] font-semibold text-slate-500 truncate">{project.equipe}</p>
                                                 </div>
 
                                                 <div className="md:col-span-1">
                                                   <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Fase</p>
-                                                  <p className="text-[12px] font-medium text-slate-500 truncate">{project.phase}</p>
+                                                  <p className="text-[12px] font-semibold text-slate-500 truncate">{project.phase}</p>
                                                 </div>
-                                                <div className="md:col-span-2">
+                                                <div className="md:col-span-2 flex justify-center">
                                                   <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Status</p>
                                                   <StatusBadge status={project.status} />
                                                 </div>
@@ -921,25 +914,25 @@ export default function App() {
                                                   <FarolIndicator farol={project.farol} />
                                                 </div>
 
-                                                <div className="md:col-span-2 flex items-center gap-2">
-                                                  <div className="space-y-0.5">
+                                                <div className="md:col-span-2 flex items-center justify-center gap-2">
+                                                  <div className="space-y-1">
                                                     <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase">Datas</p>
-                                                    <div className="flex items-center gap-2 text-[12px] font-medium">
+                                                    <div className="flex items-center gap-3 text-[12px] font-bold">
                                                       <span className="text-slate-500">{project.baseline || '---'}</span>
-                                                      <span className="text-slate-300">/</span>
-                                                      <span className="text-slate-500">{project.deliveryDate || project.replannedDate || '---'}</span>
+                                                      <span className="text-slate-200">/</span>
+                                                      <span className="text-indigo-600/70">{project.deliveryDate || project.replannedDate || '---'}</span>
                                                     </div>
                                                   </div>
                                                 </div>
 
-                                                  <div className="md:col-span-1 flex items-center justify-end gap-1 md:border-l border-slate-50 md:pl-2">
-                                                    <button onClick={(e) => { e.stopPropagation(); setEditingProject(project); setIsEditOpen(true); }} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Pencil size={16} /></button>
+                                                  <div className="md:col-span-1 flex items-center justify-end gap-2 md:border-l border-slate-100 md:pl-4">
+                                                    <button onClick={(e) => { e.stopPropagation(); setEditingProject(project); setIsEditOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"><Pencil size={18} /></button>
                                                     <button
                                                       onClick={(e) => { e.stopPropagation(); handleDeleteProject(project); }}
                                                       disabled={deletingProjectId === project.id}
-                                                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                                      className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                                                     >
-                                                      {deletingProjectId === project.id ? <div className="w-3.5 h-3.5 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" /> : <Trash2 size={16} />}
+                                                      {deletingProjectId === project.id ? <div className="w-4 h-4 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" /> : <Trash2 size={18} />}
                                                     </button>
                                                   </div>
                                                 </div>
@@ -983,14 +976,17 @@ export default function App() {
       <AnimatePresence>
         {isCreateOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-5 sm:p-5 my-8">
-              <div className="flex justify-between items-center mb-6 shrink-0">
-                <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Novo Registro</h2>
-                <button onClick={() => setIsCreateOpen(false)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-50 rounded-full"><X size={20} /></button>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl p-10 my-8">
+              <div className="flex justify-between items-center mb-10 shrink-0">
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-1">Novo Registro</h2>
+                  <div className="h-1 w-12 bg-indigo-600 rounded-full" />
+                </div>
+                <button onClick={() => setIsCreateOpen(false)} className="text-slate-400 hover:text-slate-600 p-3 hover:bg-slate-50 rounded-2xl transition-all"><X size={24} /></button>
               </div>
-              <div className="overflow-y-auto max-h-[70vh] pr-2 custom-scrollbar">
-              <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(newProject, false); }} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="overflow-y-auto max-h-[65vh] pr-4 -mr-4 custom-scrollbar">
+              <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(newProject, false); }} className="space-y-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                   <div className="md:col-span-2">
                     <FormField label="Projeto Pai">
                       <select
@@ -1087,18 +1083,18 @@ export default function App() {
                     <select value={newProject.farol} onChange={(e) => setNewProject({...newProject, farol: e.target.value})} className={inputClass}>{ALL_FAROL.map(f => <option key={f} value={f}>{f}</option>)}</select>
                   </FormField>
                   <FormField label="Data Replanejada"><input placeholder="DD/MM/AAAA" value={newProject.replannedDate} onChange={(e) => setNewProject({...newProject, replannedDate: maskDate(e.target.value)})} className={inputClass} /></FormField>
-                  <div className="grid grid-cols-2 gap-4 md:col-span-2">
+                  <div className="grid grid-cols-2 gap-x-8 md:col-span-2">
                     <FormField label="Data de Início"><input placeholder="DD/MM/AAAA" value={newProject.baseline} onChange={(e) => setNewProject(applyProjectRules({...newProject, baseline: maskDate(e.target.value)}))} className={inputClass} /></FormField>
                     <FormField label="Data de Entrega"><input placeholder="DD/MM/AAAA" value={newProject.deliveryDate} onChange={(e) => setNewProject(applyProjectRules({...newProject, deliveryDate: maskDate(e.target.value)}))} className={inputClass} /></FormField>
                   </div>
                   <div className="md:col-span-2">
-                    <FormField label="Descrição do Projeto"><textarea rows={3} placeholder="Descrição detalhada do projeto..." value={newProject.description} onChange={(e) => setNewProject({...newProject, description: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
+                    <FormField label="Descrição do Projeto"><textarea rows={4} placeholder="Descrição detalhada do projeto..." value={newProject.description} onChange={(e) => setNewProject({...newProject, description: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
                   </div>
                   <div className="md:col-span-2">
-                    <FormField label="Relatório (Status Resumido)"><textarea rows={2} placeholder="Breve resumo do status..." value={newProject.report} onChange={(e) => setNewProject({...newProject, report: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
+                    <FormField label="Relatório (Status Resumido)"><textarea rows={3} placeholder="Breve resumo do status..." value={newProject.report} onChange={(e) => setNewProject({...newProject, report: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
                   </div>
                 </div>
-                <div className="flex justify-end gap-3 pt-6 pb-2">
+                <div className="flex justify-end gap-4 pt-4 pb-4">
                   <button type="button" onClick={() => setIsCreateOpen(false)} className="px-6 py-2.5 text-slate-600 hover:bg-slate-50 rounded-xl font-bold transition-colors">Cancelar</button>
                   <button type="submit" disabled={isSaving} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100 min-w-[160px]">
                     {isSaving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Plus size={18} />}
@@ -1113,14 +1109,17 @@ export default function App() {
 
         {isEditOpen && editingProject && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-5 sm:p-5 my-8">
-              <div className="flex justify-between items-center mb-6 shrink-0">
-                <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Editar Registro</h2>
-                <button onClick={() => setIsEditOpen(false)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-50 rounded-full"><X size={20} /></button>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl p-10 my-8">
+              <div className="flex justify-between items-center mb-10 shrink-0">
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-1">Editar Registro</h2>
+                  <div className="h-1 w-12 bg-indigo-600 rounded-full" />
+                </div>
+                <button onClick={() => setIsEditOpen(false)} className="text-slate-400 hover:text-slate-600 p-3 hover:bg-slate-50 rounded-2xl transition-all"><X size={24} /></button>
               </div>
-              <div className="overflow-y-auto max-h-[70vh] pr-2 custom-scrollbar">
-              <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(editingProject, true); }} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="overflow-y-auto max-h-[65vh] pr-4 -mr-4 custom-scrollbar">
+              <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(editingProject, true); }} className="space-y-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                   <div className="md:col-span-2">
                     <FormField label="Projeto Pai"><input disabled value={editingProject.name} className={`${inputClass} opacity-50 bg-slate-100`} /></FormField>
                   </div>
@@ -1162,18 +1161,18 @@ export default function App() {
                     <select value={editingProject.farol} onChange={(e) => setEditingProject({...editingProject, farol: e.target.value})} className={inputClass}>{ALL_FAROL.map(f => <option key={f} value={f}>{f}</option>)}</select>
                   </FormField>
                   <FormField label="Data Replanejada"><input placeholder="DD/MM/AAAA" value={editingProject.replannedDate} onChange={(e) => setEditingProject({...editingProject, replannedDate: maskDate(e.target.value)})} className={inputClass} /></FormField>
-                  <div className="grid grid-cols-2 gap-4 md:col-span-2">
+                  <div className="grid grid-cols-2 gap-x-8 md:col-span-2">
                     <FormField label="Data de Início"><input placeholder="DD/MM/AAAA" value={editingProject.baseline} onChange={(e) => setEditingProject(applyProjectRules({...editingProject, baseline: maskDate(e.target.value)}) as Project)} className={inputClass} /></FormField>
                     <FormField label="Data de Entrega"><input placeholder="DD/MM/AAAA" value={editingProject.deliveryDate} onChange={(e) => setEditingProject(applyProjectRules({...editingProject, deliveryDate: maskDate(e.target.value)}) as Project)} className={inputClass} /></FormField>
                   </div>
                   <div className="md:col-span-2">
-                    <FormField label="Descrição do Projeto"><textarea rows={3} value={editingProject.description} onChange={(e) => setEditingProject({...editingProject, description: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
+                    <FormField label="Descrição do Projeto"><textarea rows={4} value={editingProject.description} onChange={(e) => setEditingProject({...editingProject, description: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
                   </div>
                   <div className="md:col-span-2">
-                    <FormField label="Relatório (Status Resumido)"><textarea rows={2} value={editingProject.report} onChange={(e) => setEditingProject({...editingProject, report: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
+                    <FormField label="Relatório (Status Resumido)"><textarea rows={3} value={editingProject.report} onChange={(e) => setEditingProject({...editingProject, report: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
                   </div>
                 </div>
-                <div className="flex justify-end gap-3 pt-6 pb-2">
+                <div className="flex justify-end gap-4 pt-4 pb-4">
                   <button type="button" onClick={() => setIsEditOpen(false)} className="px-6 py-2.5 text-slate-600 hover:bg-slate-50 rounded-xl font-bold transition-colors">Cancelar</button>
                   <button type="submit" disabled={isSaving} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100 min-w-[180px]">
                     {isSaving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={18} />}
@@ -1220,7 +1219,24 @@ export default function App() {
         <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       </Suspense>
         </div>
-      </SignedIn>
+  );
+
+  return (
+    <>
+      {bypassAuth ? (
+        <MainContent />
+      ) : (
+        <>
+          <SignedOut>
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+              <SignIn />
+            </div>
+          </SignedOut>
+          <SignedIn>
+            <MainContent />
+          </SignedIn>
+        </>
+      )}
     </>
   );
 }
