@@ -183,7 +183,7 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, isSaving
               <p className="text-xl font-bold text-slate-900 truncate" title={project.client}>{project.client || 'N/A'}</p>
             </div>
             <div className="space-y-1 md:border-l md:border-slate-100 md:px-4">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Baseline</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Data de Início</p>
               <p className="text-xl font-bold text-slate-900 truncate">{project.baseline || '---'}</p>
             </div>
             <div className="space-y-1 md:border-l md:border-slate-100 md:px-4">
@@ -191,7 +191,7 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, isSaving
               <p className="text-xl font-bold text-slate-900 truncate">{project.replannedDate || '---'}</p>
             </div>
             <div className="space-y-1 md:border-l md:border-slate-100 md:pl-4">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Entrega</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Data de Entrega</p>
               <p className="text-xl font-bold text-slate-900 truncate">{project.deliveryDate || '---'}</p>
             </div>
           </div>

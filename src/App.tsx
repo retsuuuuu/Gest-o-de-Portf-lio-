@@ -53,10 +53,10 @@ const MultiSelect = React.memo(({ label, options, selected, onChange }: { label:
     <div className="relative group/filter" ref={containerRef}>
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-500 cursor-pointer hover:border-indigo-300 hover:bg-white hover:text-indigo-600 transition-all"
+        className="flex items-center gap-2 px-3 py-1 bg-white border border-slate-300 rounded-lg text-[11px] font-extrabold text-slate-600 cursor-pointer hover:border-indigo-400 hover:text-indigo-600 shadow-sm transition-all"
       >
-        <Filter size={10} className="text-slate-400 group-hover/filter:text-indigo-400" />
-        <span className="truncate max-w-[70px]">
+        <Filter size={11} className="text-slate-500 group-hover/filter:text-indigo-500" />
+        <span className="truncate max-w-[80px]">
           {selected.includes('Todos') ? label : selected.join(', ')}
         </span>
         <ChevronRight size={10} className={`text-slate-300 transition-transform ${isOpen ? 'rotate-90 text-indigo-400' : ''}`} />
@@ -879,12 +879,12 @@ export default function App() {
                                       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="pl-4 space-y-2">
                                         <div className="bg-slate-50/50 rounded-3xl p-3 border border-slate-100 shadow-inner">
                                           <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                            <div className="col-span-4">Item</div>
+                                            <div className="col-span-3">Item</div>
                                             <div className="col-span-2">Equipe</div>
                                             <div className="col-span-1">Fase</div>
                                             <div className="col-span-2">Status</div>
                                             <div className="col-span-1">Farol</div>
-                                            <div className="col-span-1">Entrega</div>
+                                            <div className="col-span-2">Início / Entrega</div>
                                             <div className="col-span-1 text-right">Ações</div>
                                           </div>
 
@@ -895,7 +895,7 @@ export default function App() {
                                               className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all cursor-pointer group relative overflow-hidden mb-2 last:mb-0"
                                             >
                                               <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                                                <div className="md:col-span-4 space-y-0.5">
+                                                <div className="md:col-span-3 space-y-0.5">
                                                   <h4 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{project.item}</h4>
                                                   <div className="flex items-center gap-1 shrink-0">
                                                     <span className="text-[8px] font-bold px-1 py-0.5 bg-slate-50 text-slate-400 rounded border border-slate-100 uppercase">{project.code}</span>
@@ -921,9 +921,15 @@ export default function App() {
                                                   <FarolIndicator farol={project.farol} />
                                                 </div>
 
-                                                <div className="md:col-span-1">
-                                                  <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Entrega</p>
-                                                  <p className="text-[12px] font-bold text-slate-500">{project.deliveryDate || project.replannedDate || project.baseline || '---'}</p>
+                                                <div className="md:col-span-2 flex items-center gap-2">
+                                                  <div className="space-y-0.5">
+                                                    <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase">Datas</p>
+                                                    <div className="flex items-center gap-2 text-[11px] font-bold">
+                                                      <span className="text-slate-400">{project.baseline || '---'}</span>
+                                                      <span className="text-slate-300">/</span>
+                                                      <span className="text-slate-600">{project.deliveryDate || project.replannedDate || '---'}</span>
+                                                    </div>
+                                                  </div>
                                                 </div>
 
                                                   <div className="md:col-span-1 flex items-center justify-end gap-1 md:border-l border-slate-50 md:pl-2">
@@ -1080,8 +1086,8 @@ export default function App() {
                   <FormField label="Farol">
                     <select value={newProject.farol} onChange={(e) => setNewProject({...newProject, farol: e.target.value})} className={inputClass}>{ALL_FAROL.map(f => <option key={f} value={f}>{f}</option>)}</select>
                   </FormField>
-                  <FormField label="Data Base (Baseline)"><input placeholder="DD/MM/AAAA" value={newProject.baseline} onChange={(e) => setNewProject(applyProjectRules({...newProject, baseline: maskDate(e.target.value)}))} className={inputClass} /></FormField>
                   <FormField label="Data Replanejada"><input placeholder="DD/MM/AAAA" value={newProject.replannedDate} onChange={(e) => setNewProject({...newProject, replannedDate: maskDate(e.target.value)})} className={inputClass} /></FormField>
+                  <FormField label="Data de Início"><input placeholder="DD/MM/AAAA" value={newProject.baseline} onChange={(e) => setNewProject(applyProjectRules({...newProject, baseline: maskDate(e.target.value)}))} className={inputClass} /></FormField>
                   <FormField label="Data de Entrega"><input placeholder="DD/MM/AAAA" value={newProject.deliveryDate} onChange={(e) => setNewProject(applyProjectRules({...newProject, deliveryDate: maskDate(e.target.value)}))} className={inputClass} /></FormField>
                   <div className="md:col-span-2">
                     <FormField label="Descrição do Projeto"><textarea rows={3} placeholder="Descrição detalhada do projeto..." value={newProject.description} onChange={(e) => setNewProject({...newProject, description: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
@@ -1153,8 +1159,8 @@ export default function App() {
                   <FormField label="Farol">
                     <select value={editingProject.farol} onChange={(e) => setEditingProject({...editingProject, farol: e.target.value})} className={inputClass}>{ALL_FAROL.map(f => <option key={f} value={f}>{f}</option>)}</select>
                   </FormField>
-                  <FormField label="Data Base (Baseline)"><input placeholder="DD/MM/AAAA" value={editingProject.baseline} onChange={(e) => setEditingProject(applyProjectRules({...editingProject, baseline: maskDate(e.target.value)}) as Project)} className={inputClass} /></FormField>
                   <FormField label="Data Replanejada"><input placeholder="DD/MM/AAAA" value={editingProject.replannedDate} onChange={(e) => setEditingProject({...editingProject, replannedDate: maskDate(e.target.value)})} className={inputClass} /></FormField>
+                  <FormField label="Data de Início"><input placeholder="DD/MM/AAAA" value={editingProject.baseline} onChange={(e) => setEditingProject(applyProjectRules({...editingProject, baseline: maskDate(e.target.value)}) as Project)} className={inputClass} /></FormField>
                   <FormField label="Data de Entrega"><input placeholder="DD/MM/AAAA" value={editingProject.deliveryDate} onChange={(e) => setEditingProject(applyProjectRules({...editingProject, deliveryDate: maskDate(e.target.value)}) as Project)} className={inputClass} /></FormField>
                   <div className="md:col-span-2">
                     <FormField label="Descrição do Projeto"><textarea rows={3} value={editingProject.description} onChange={(e) => setEditingProject({...editingProject, description: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
