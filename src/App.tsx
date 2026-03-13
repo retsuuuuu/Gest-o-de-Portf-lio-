@@ -892,25 +892,25 @@ export default function App() {
                                             <div
                                               key={project.id}
                                               onClick={() => { setSelectedProject(project); setView('detalhes'); }}
-                                              className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all cursor-pointer group relative overflow-hidden mb-2 last:mb-0"
+                                              className="bg-white px-6 py-3 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all cursor-pointer group relative overflow-hidden mb-2 last:mb-0"
                                             >
                                               <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                                                <div className="md:col-span-3 space-y-0.5">
-                                                  <h4 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{project.item}</h4>
-                                                  <div className="flex items-center gap-1 shrink-0">
-                                                    <span className="text-[8px] font-bold px-1 py-0.5 bg-slate-50 text-slate-400 rounded border border-slate-100 uppercase">{project.code}</span>
+                                                <div className="md:col-span-3 space-y-1">
+                                                  <h4 className="text-[13px] font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{project.item}</h4>
+                                                  <div className="flex items-center gap-1.5 shrink-0">
+                                                    <span className="text-[9px] font-bold px-1.5 py-0.5 bg-slate-50 text-slate-400 rounded border border-slate-100 uppercase tracking-tight">{project.code}</span>
                                                     {project.priority && project.priority !== 'Normal' && <PriorityIcon priority={project.priority} />}
                                                   </div>
                                                 </div>
 
                                                 <div className="md:col-span-2">
                                                   <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Equipe</p>
-                                                  <p className="text-[13px] font-semibold text-slate-900 truncate">{project.equipe}</p>
+                                                  <p className="text-[12px] font-medium text-slate-500 truncate">{project.equipe}</p>
                                                 </div>
 
                                                 <div className="md:col-span-1">
                                                   <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Fase</p>
-                                                  <p className="text-[13px] font-semibold text-slate-600 truncate">{project.phase}</p>
+                                                  <p className="text-[12px] font-medium text-slate-500 truncate">{project.phase}</p>
                                                 </div>
                                                 <div className="md:col-span-2">
                                                   <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Status</p>
@@ -924,10 +924,10 @@ export default function App() {
                                                 <div className="md:col-span-2 flex items-center gap-2">
                                                   <div className="space-y-0.5">
                                                     <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase">Datas</p>
-                                                    <div className="flex items-center gap-2 text-[11px] font-bold">
-                                                      <span className="text-slate-600">{project.baseline || '---'}</span>
+                                                    <div className="flex items-center gap-2 text-[12px] font-medium">
+                                                      <span className="text-slate-500">{project.baseline || '---'}</span>
                                                       <span className="text-slate-300">/</span>
-                                                      <span className="text-slate-600">{project.deliveryDate || project.replannedDate || '---'}</span>
+                                                      <span className="text-slate-500">{project.deliveryDate || project.replannedDate || '---'}</span>
                                                     </div>
                                                   </div>
                                                 </div>
