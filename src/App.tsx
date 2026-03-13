@@ -925,7 +925,7 @@ export default function App() {
                                                   <div className="space-y-0.5">
                                                     <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase">Datas</p>
                                                     <div className="flex items-center gap-2 text-[11px] font-bold">
-                                                      <span className="text-slate-400">{project.baseline || '---'}</span>
+                                                      <span className="text-slate-600">{project.baseline || '---'}</span>
                                                       <span className="text-slate-300">/</span>
                                                       <span className="text-slate-600">{project.deliveryDate || project.replannedDate || '---'}</span>
                                                     </div>
