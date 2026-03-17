@@ -106,7 +106,7 @@ export const ProjectDetailsView = React.memo(({ project, allProjects = [], avail
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberRole, setNewMemberRole] = useState('UX');
 
-  const relatedItems = allProjects.filter(p => p.name === project.name && p.id !== project.id);
+  const relatedItems = allProjects.filter(p => p.name === project.name && p.client === project.client);
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
@@ -264,21 +264,32 @@ export const ProjectDetailsView = React.memo(({ project, allProjects = [], avail
             <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-8 space-y-6">
               <h3 className="text-base font-bold text-slate-900">Itens Atrelados</h3>
               <div className="space-y-3">
-                {relatedItems.map(item => (
-                  <div
-                    key={item.id}
-                    onClick={() => onProjectClick(item)}
-                    className="p-4 bg-slate-50 rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition-all cursor-pointer group"
-                  >
-                    <div className="flex justify-between items-center">
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors truncate">{item.item}</p>
-                        <p className="text-[10px] text-slate-400 font-medium uppercase tracking-tight">{item.code}</p>
+                {relatedItems.map(item => {
+                  const isActive = item.id === project.id;
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => !isActive && onProjectClick(item)}
+                      className={`p-4 rounded-2xl transition-all cursor-pointer group border-2 ${
+                        isActive
+                          ? 'bg-indigo-50 border-indigo-600 shadow-sm'
+                          : 'bg-slate-50 border-transparent hover:bg-indigo-50 hover:border-indigo-100'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className={`text-sm font-bold transition-colors break-words ${isActive ? 'text-indigo-600' : 'text-slate-900 group-hover:text-indigo-600'}`}>
+                            {item.item}
+                          </p>
+                          <p className={`text-[10px] font-medium uppercase tracking-tight ${isActive ? 'text-indigo-400' : 'text-slate-400'}`}>
+                            {item.code}
+                          </p>
+                        </div>
+                        <StatusBadge status={item.status} />
                       </div>
-                      <StatusBadge status={item.status} />
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

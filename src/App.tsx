@@ -131,9 +131,9 @@ const StatCard = React.memo(({ label, value, icon: Icon, color, onClick, variant
   </div>
 ));
 
-const FormField = React.memo(({ label, children }: { label: string, children: React.ReactNode }) => (
+const FormField = React.memo(({ label, children, id }: { label: string, children: React.ReactNode, id?: string }) => (
   <div className="flex flex-col gap-2.5">
-    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.1em]">{label}</label>
+    <label htmlFor={id} className="text-[11px] font-black text-slate-400 uppercase tracking-[0.1em]">{label}</label>
     {children}
   </div>
 ));
@@ -679,7 +679,7 @@ export default function App() {
         </nav>
         <div className="p-6 border-t border-slate-100">
           <div
-            onClick={() => handleOpenListModal("Projetos Filtrados", filteredData)}
+                    onClick={() => handleOpenListModal("Status Geral do Portfólio", filteredData)}
             className="bg-indigo-600 rounded-2xl p-6 text-white relative overflow-hidden shadow-lg shadow-indigo-200 cursor-pointer hover:bg-indigo-700 transition-colors group"
           >
             <div className="relative z-10">
@@ -905,8 +905,8 @@ export default function App() {
                                               className="bg-white px-8 py-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-indigo-100 transition-all cursor-pointer group relative overflow-hidden mb-3 last:mb-0"
                                             >
                                               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                                                <div className="md:col-span-5 space-y-1.5">
-                                                  <h4 className="text-[14px] font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{project.item}</h4>
+                                                <div className="md:col-span-6 space-y-1.5">
+                                                  <h4 className="text-[14px] font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight break-words">{project.item}</h4>
                                                   <div className="flex items-center gap-3">
                                                     <span className="text-[10px] font-black px-2 py-0.5 bg-slate-50 text-slate-400 rounded-md border border-slate-100 uppercase tracking-wider">{project.code}</span>
                                                     <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">{project.equipe}</span>
@@ -914,7 +914,7 @@ export default function App() {
                                                   </div>
                                                 </div>
 
-                                                <div className="md:col-span-1 text-center">
+                                                <div className="md:col-span-1 text-center hidden md:block">
                                                   <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Fase</p>
                                                   <p className="text-[12px] font-semibold text-slate-500 truncate">{project.phase}</p>
                                                 </div>
@@ -1001,8 +1001,9 @@ export default function App() {
               <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(newProject, false); }} className="space-y-10">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                   <div className="md:col-span-2">
-                    <FormField label="Projeto Pai">
+                    <FormField label="Projeto Pai" id="create-project-name">
                       <select
+                        id="create-project-name"
                         required
                         className={`${inputClass} bg-white shadow-sm border-slate-200 focus:border-indigo-500`}
                         value={newProject.name}
@@ -1025,8 +1026,9 @@ export default function App() {
                   </div>
 
                   <div className="md:col-span-2">
-                    <FormField label="Item / Entregável">
+                    <FormField label="Item / Entregável" id="create-project-item">
                       <select
+                        id="create-project-item"
                         required
                         disabled={!newProject.name}
                         className={`${inputClass} bg-white shadow-sm border-slate-200 focus:border-indigo-500 disabled:bg-slate-50`}
@@ -1059,20 +1061,27 @@ export default function App() {
                       </select>
                     </FormField>
                   </div>
-                  <FormField label="Código do Projeto"><input disabled value={newProject.code} className={`${inputClass} opacity-50 bg-slate-100`} /></FormField>
-                  <FormField label="Equipe"><input disabled value={newProject.equipe} className={`${inputClass} opacity-50 bg-slate-100`} /></FormField>
-                  <FormField label="Iniciativa"><input required placeholder="Iniciativa" value={newProject.initiative} onChange={(e) => setNewProject({...newProject, initiative: e.target.value})} className={inputClass} /></FormField>
-                  <FormField label="Cliente"><input required placeholder="Cliente" value={newProject.client} onChange={(e) => setNewProject({...newProject, client: e.target.value})} className={inputClass} /></FormField>
-                  <FormField label="Prioridade">
-                    <select value={newProject.priority} onChange={(e) => setNewProject({...newProject, priority: e.target.value as any})} className={inputClass}>
+                  <FormField label="Código do Projeto" id="create-project-code"><input id="create-project-code" disabled value={newProject.code} className={`${inputClass} opacity-50 bg-slate-100`} /></FormField>
+                  <FormField label="Equipe" id="create-project-team"><input id="create-project-team" disabled value={newProject.equipe} className={`${inputClass} opacity-50 bg-slate-100`} /></FormField>
+                  <FormField label="Iniciativa" id="create-project-initiative"><input id="create-project-initiative" required placeholder="Iniciativa" value={newProject.initiative} onChange={(e) => setNewProject({...newProject, initiative: e.target.value})} className={inputClass} /></FormField>
+                  <FormField label="Cliente" id="create-project-client"><input id="create-project-client" required placeholder="Cliente" value={newProject.client} onChange={(e) => setNewProject({...newProject, client: e.target.value})} className={inputClass} /></FormField>
+                  <FormField label="Tipo de Projeto" id="create-project-type">
+                    <select id="create-project-type" value={newProject.type} onChange={(e) => setNewProject({...newProject, type: e.target.value})} className={inputClass}>
+                      <option value="Estratégico">Estratégico</option>
+                      <option value="Tático">Tático</option>
+                      <option value="Operacional">Operacional</option>
+                    </select>
+                  </FormField>
+                  <FormField label="Prioridade" id="create-project-priority">
+                    <select id="create-project-priority" value={newProject.priority} onChange={(e) => setNewProject({...newProject, priority: e.target.value as any})} className={inputClass}>
                       <option value="Normal">Normal</option>
                       <option value="Star">Star (Alta)</option>
                       <option value="Heart">Heart (Média)</option>
                       <option value="Like">Like (Baixa)</option>
                     </select>
                   </FormField>
-                  <FormField label="Status">
-                    <select value={newProject.status} onChange={(e) => {
+                  <FormField label="Status" id="create-project-status">
+                    <select id="create-project-status" value={newProject.status} onChange={(e) => {
                       const status = e.target.value;
                       let phase = newProject.phase;
                       if (status === 'Backlog') phase = 'Backlog';
@@ -1083,8 +1092,8 @@ export default function App() {
                       {ALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </FormField>
-                  <FormField label="Fase">
-                    <select value={newProject.phase} onChange={(e) => setNewProject({...newProject, phase: e.target.value})} disabled={newProject.status === 'Backlog' || newProject.status === 'Concluído'} className={inputClass}>
+                  <FormField label="Fase" id="create-project-phase">
+                    <select id="create-project-phase" value={newProject.phase} onChange={(e) => setNewProject({...newProject, phase: e.target.value})} disabled={newProject.status === 'Backlog' || newProject.status === 'Concluído'} className={inputClass}>
                       {ALL_PHASES.filter(f => {
                         if (newProject.status === 'Backlog') return f === 'Backlog';
                         if (newProject.status === 'Concluído') return f === 'Concluído';
@@ -1092,19 +1101,19 @@ export default function App() {
                       }).map(f => <option key={f} value={f}>{f}</option>)}
                     </select>
                   </FormField>
-                  <FormField label="Farol">
-                    <select value={newProject.farol} onChange={(e) => setNewProject({...newProject, farol: e.target.value})} className={inputClass}>{ALL_FAROL.map(f => <option key={f} value={f}>{f}</option>)}</select>
+                  <FormField label="Farol" id="create-project-farol">
+                    <select id="create-project-farol" value={newProject.farol} onChange={(e) => setNewProject({...newProject, farol: e.target.value})} className={inputClass}>{ALL_FAROL.map(f => <option key={f} value={f}>{f}</option>)}</select>
                   </FormField>
-                  <FormField label="Data Replanejada"><input placeholder="DD/MM/AAAA" value={newProject.replannedDate} onChange={(e) => setNewProject({...newProject, replannedDate: maskDate(e.target.value)})} className={inputClass} /></FormField>
+                  <FormField label="Data Replanejada" id="create-project-replanned"><input id="create-project-replanned" placeholder="DD/MM/AAAA" value={newProject.replannedDate} onChange={(e) => setNewProject({...newProject, replannedDate: maskDate(e.target.value)})} className={inputClass} /></FormField>
                   <div className="grid grid-cols-2 gap-x-8 md:col-span-2">
-                    <FormField label="Data de Início"><input placeholder="DD/MM/AAAA" value={newProject.baseline} onChange={(e) => setNewProject(applyProjectRules({...newProject, baseline: maskDate(e.target.value)}))} className={inputClass} /></FormField>
-                    <FormField label="Data de Entrega"><input placeholder="DD/MM/AAAA" value={newProject.deliveryDate} onChange={(e) => setNewProject(applyProjectRules({...newProject, deliveryDate: maskDate(e.target.value)}))} className={inputClass} /></FormField>
+                    <FormField label="Data de Início" id="create-project-start"><input id="create-project-start" placeholder="DD/MM/AAAA" value={newProject.baseline} onChange={(e) => setNewProject(applyProjectRules({...newProject, baseline: maskDate(e.target.value)}))} className={inputClass} /></FormField>
+                    <FormField label="Data de Entrega" id="create-project-delivery"><input id="create-project-delivery" placeholder="DD/MM/AAAA" value={newProject.deliveryDate} onChange={(e) => setNewProject(applyProjectRules({...newProject, deliveryDate: maskDate(e.target.value)}))} className={inputClass} /></FormField>
                   </div>
                   <div className="md:col-span-2">
-                    <FormField label="Descrição do Projeto"><textarea rows={4} placeholder="Descrição detalhada do projeto..." value={newProject.description} onChange={(e) => setNewProject({...newProject, description: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
+                    <FormField label="Descrição do Projeto" id="create-project-desc"><textarea id="create-project-desc" rows={4} placeholder="Descrição detalhada do projeto..." value={newProject.description} onChange={(e) => setNewProject({...newProject, description: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
                   </div>
                   <div className="md:col-span-2">
-                    <FormField label="Relatório (Status Resumido)"><textarea rows={3} placeholder="Breve resumo do status..." value={newProject.report} onChange={(e) => setNewProject({...newProject, report: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
+                    <FormField label="Relatório (Status Resumido)" id="create-project-report"><textarea id="create-project-report" rows={3} placeholder="Breve resumo do status..." value={newProject.report} onChange={(e) => setNewProject({...newProject, report: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
                   </div>
                 </div>
                 <div className="flex justify-end gap-4 pt-4 pb-4">
@@ -1134,25 +1143,32 @@ export default function App() {
               <form onSubmit={(e) => { e.preventDefault(); handleSaveProject(editingProject, true); }} className="space-y-10">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                   <div className="md:col-span-2">
-                    <FormField label="Projeto Pai"><input disabled value={editingProject.name} className={`${inputClass} opacity-50 bg-slate-100`} /></FormField>
+                    <FormField label="Projeto Pai" id="edit-project-name"><input id="edit-project-name" disabled value={editingProject.name} className={`${inputClass} opacity-50 bg-slate-100`} /></FormField>
                   </div>
                   <div className="md:col-span-2">
-                    <FormField label="Item / Entregável"><input disabled value={editingProject.item} className={`${inputClass} opacity-50 bg-slate-100`} /></FormField>
+                    <FormField label="Item / Entregável" id="edit-project-item"><input id="edit-project-item" disabled value={editingProject.item} className={`${inputClass} opacity-50 bg-slate-100`} /></FormField>
                   </div>
-                  <FormField label="Código do Projeto"><input required value={editingProject.code} onChange={(e) => setEditingProject({...editingProject, code: e.target.value})} className={inputClass} /></FormField>
-                  <FormField label="Equipe"><input value={editingProject.equipe} onChange={(e) => setEditingProject({...editingProject, equipe: e.target.value})} className={inputClass} /></FormField>
-                  <FormField label="Iniciativa"><input required value={editingProject.initiative} onChange={(e) => setEditingProject({...editingProject, initiative: e.target.value})} className={inputClass} /></FormField>
-                  <FormField label="Cliente"><input required value={editingProject.client} onChange={(e) => setEditingProject({...editingProject, client: e.target.value})} className={inputClass} /></FormField>
-                  <FormField label="Prioridade">
-                    <select value={editingProject.priority} onChange={(e) => setEditingProject({...editingProject, priority: e.target.value as any})} className={inputClass}>
+                  <FormField label="Código do Projeto" id="edit-project-code"><input id="edit-project-code" required value={editingProject.code} onChange={(e) => setEditingProject({...editingProject, code: e.target.value})} className={inputClass} /></FormField>
+                  <FormField label="Equipe" id="edit-project-team"><input id="edit-project-team" value={editingProject.equipe} onChange={(e) => setEditingProject({...editingProject, equipe: e.target.value})} className={inputClass} /></FormField>
+                  <FormField label="Iniciativa" id="edit-project-initiative"><input id="edit-project-initiative" required value={editingProject.initiative} onChange={(e) => setEditingProject({...editingProject, initiative: e.target.value})} className={inputClass} /></FormField>
+                  <FormField label="Cliente" id="edit-project-client"><input id="edit-project-client" required value={editingProject.client} onChange={(e) => setEditingProject({...editingProject, client: e.target.value})} className={inputClass} /></FormField>
+                  <FormField label="Tipo de Projeto" id="edit-project-type">
+                    <select id="edit-project-type" value={editingProject.type} onChange={(e) => setEditingProject({...editingProject, type: e.target.value})} className={inputClass}>
+                      <option value="Estratégico">Estratégico</option>
+                      <option value="Tático">Tático</option>
+                      <option value="Operacional">Operacional</option>
+                    </select>
+                  </FormField>
+                  <FormField label="Prioridade" id="edit-project-priority">
+                    <select id="edit-project-priority" value={editingProject.priority} onChange={(e) => setEditingProject({...editingProject, priority: e.target.value as any})} className={inputClass}>
                       <option value="Normal">Normal</option>
                       <option value="Star">Star (Alta)</option>
                       <option value="Heart">Heart (Média)</option>
                       <option value="Like">Like (Baixa)</option>
                     </select>
                   </FormField>
-                  <FormField label="Status">
-                    <select value={editingProject.status} onChange={(e) => {
+                  <FormField label="Status" id="edit-project-status">
+                    <select id="edit-project-status" value={editingProject.status} onChange={(e) => {
                       const status = e.target.value;
                       let phase = editingProject.phase;
                       if (status === 'Backlog') phase = 'Backlog';
@@ -1161,8 +1177,8 @@ export default function App() {
                       setEditingProject(applyProjectRules({...editingProject, status, phase}) as Project);
                     }} className={inputClass}>{ALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select>
                   </FormField>
-                  <FormField label="Fase">
-                    <select value={editingProject.phase} onChange={(e) => setEditingProject({...editingProject, phase: e.target.value})} disabled={editingProject.status === 'Backlog' || editingProject.status === 'Concluído'} className={inputClass}>
+                  <FormField label="Fase" id="edit-project-phase">
+                    <select id="edit-project-phase" value={editingProject.phase} onChange={(e) => setEditingProject({...editingProject, phase: e.target.value})} disabled={editingProject.status === 'Backlog' || editingProject.status === 'Concluído'} className={inputClass}>
                       {ALL_PHASES.filter(f => {
                         if (editingProject.status === 'Backlog') return f === 'Backlog';
                         if (editingProject.status === 'Concluído') return f === 'Concluído';
@@ -1170,19 +1186,19 @@ export default function App() {
                       }).map(f => <option key={f} value={f}>{f}</option>)}
                     </select>
                   </FormField>
-                  <FormField label="Farol">
-                    <select value={editingProject.farol} onChange={(e) => setEditingProject({...editingProject, farol: e.target.value})} className={inputClass}>{ALL_FAROL.map(f => <option key={f} value={f}>{f}</option>)}</select>
+                  <FormField label="Farol" id="edit-project-farol">
+                    <select id="edit-project-farol" value={editingProject.farol} onChange={(e) => setEditingProject({...editingProject, farol: e.target.value})} className={inputClass}>{ALL_FAROL.map(f => <option key={f} value={f}>{f}</option>)}</select>
                   </FormField>
-                  <FormField label="Data Replanejada"><input placeholder="DD/MM/AAAA" value={editingProject.replannedDate} onChange={(e) => setEditingProject({...editingProject, replannedDate: maskDate(e.target.value)})} className={inputClass} /></FormField>
+                  <FormField label="Data Replanejada" id="edit-project-replanned"><input id="edit-project-replanned" placeholder="DD/MM/AAAA" value={editingProject.replannedDate} onChange={(e) => setEditingProject({...editingProject, replannedDate: maskDate(e.target.value)})} className={inputClass} /></FormField>
                   <div className="grid grid-cols-2 gap-x-8 md:col-span-2">
-                    <FormField label="Data de Início"><input placeholder="DD/MM/AAAA" value={editingProject.baseline} onChange={(e) => setEditingProject(applyProjectRules({...editingProject, baseline: maskDate(e.target.value)}) as Project)} className={inputClass} /></FormField>
-                    <FormField label="Data de Entrega"><input placeholder="DD/MM/AAAA" value={editingProject.deliveryDate} onChange={(e) => setEditingProject(applyProjectRules({...editingProject, deliveryDate: maskDate(e.target.value)}) as Project)} className={inputClass} /></FormField>
+                    <FormField label="Data de Início" id="edit-project-start"><input id="edit-project-start" placeholder="DD/MM/AAAA" value={editingProject.baseline} onChange={(e) => setEditingProject(applyProjectRules({...editingProject, baseline: maskDate(e.target.value)}) as Project)} className={inputClass} /></FormField>
+                    <FormField label="Data de Entrega" id="edit-project-delivery"><input id="edit-project-delivery" placeholder="DD/MM/AAAA" value={editingProject.deliveryDate} onChange={(e) => setEditingProject(applyProjectRules({...editingProject, deliveryDate: maskDate(e.target.value)}) as Project)} className={inputClass} /></FormField>
                   </div>
                   <div className="md:col-span-2">
-                    <FormField label="Descrição do Projeto"><textarea rows={4} value={editingProject.description} onChange={(e) => setEditingProject({...editingProject, description: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
+                    <FormField label="Descrição do Projeto" id="edit-project-desc"><textarea id="edit-project-desc" rows={4} value={editingProject.description} onChange={(e) => setEditingProject({...editingProject, description: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
                   </div>
                   <div className="md:col-span-2">
-                    <FormField label="Relatório (Status Resumido)"><textarea rows={3} value={editingProject.report} onChange={(e) => setEditingProject({...editingProject, report: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
+                    <FormField label="Relatório (Status Resumido)" id="edit-project-report"><textarea id="edit-project-report" rows={3} value={editingProject.report} onChange={(e) => setEditingProject({...editingProject, report: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
                   </div>
                 </div>
                 <div className="flex justify-end gap-4 pt-4 pb-4">
