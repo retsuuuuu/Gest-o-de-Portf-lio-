@@ -5,7 +5,20 @@ import {
   Eye, Pencil, X, Save, Calendar, Trash2, ArrowLeft,
   Info, Star, Heart, ThumbsUp, ChevronRight
 } from 'lucide-react';
-import { useUser, SignedIn, SignedOut, SignIn, UserButton } from '@clerk/clerk-react';
+import * as Clerk from '@clerk/clerk-react';
+
+const BYPASS_AUTH = import.meta.env.VITE_BYPASS_AUTH === 'true';
+
+const useUser = BYPASS_AUTH
+  ? () => ({ user: { id: 'dev_user', publicMetadata: { role: 'admin' } }, isLoaded: true })
+  : Clerk.useUser;
+
+const SignedIn = BYPASS_AUTH ? ({ children }: any) => <>{children}</> : Clerk.SignedIn;
+const SignedOut = BYPASS_AUTH ? ({ children }: any) => null : Clerk.SignedOut;
+const SignIn = Clerk.SignIn;
+const UserButton = BYPASS_AUTH
+  ? () => <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-xs border border-indigo-200 shadow-sm">DEV</div>
+  : Clerk.UserButton;
 import { motion, AnimatePresence } from 'motion/react';
 import { Project, TeamData } from './types';
 import { ALL_PHASES, ALL_STATUS, ALL_FAROL } from './constants';
@@ -190,13 +203,16 @@ const FarolIndicator = React.memo(({ farol }: { farol: string }) => {
 
 const getClientBrandStyles = (client: string, isExpanded: boolean) => {
   const c = client.toUpperCase();
-  if (isExpanded) return {
-    banner: 'bg-slate-900 shadow-slate-200/50',
-    text: 'text-white',
-    subtext: 'text-slate-400',
-    indicator: 'bg-indigo-500',
-    badge: 'bg-indigo-600 text-white border-indigo-500/30'
-  };
+
+  if (!isExpanded) {
+    return {
+      banner: 'bg-white border border-slate-100 hover:border-indigo-200 shadow-slate-100',
+      text: 'text-slate-900 group-hover:text-indigo-600',
+      subtext: 'text-slate-400',
+      indicator: 'bg-slate-200 group-hover:bg-indigo-400',
+      badge: 'bg-slate-50 text-slate-500 border-slate-100 group-hover:bg-indigo-50 group-hover:text-indigo-600'
+    };
+  }
 
   if (c.includes('CLARO')) return {
     banner: 'bg-red-600 shadow-red-200/50',
@@ -221,11 +237,11 @@ const getClientBrandStyles = (client: string, isExpanded: boolean) => {
   };
 
   return {
-    banner: 'bg-white border border-slate-100 hover:border-indigo-200 shadow-slate-100',
-    text: 'text-slate-900 group-hover:text-indigo-600',
+    banner: 'bg-slate-900 shadow-slate-200/50',
+    text: 'text-white',
     subtext: 'text-slate-400',
-    indicator: 'bg-slate-200 group-hover:bg-indigo-400',
-    badge: 'bg-slate-50 text-slate-500 border-slate-100 group-hover:bg-indigo-50 group-hover:text-indigo-600'
+    indicator: 'bg-indigo-500',
+    badge: 'bg-indigo-600 text-white border-indigo-500/30'
   };
 };
 
@@ -705,10 +721,12 @@ export default function App() {
             <Suspense fallback={<div className="flex-1 flex items-center justify-center min-h-[400px]"><div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>}>
               <ProjectDetailsView
                 project={selectedProject}
+                allProjects={projectsData}
                 availableTeam={teamData}
                 isSaving={isSaving}
                 onBack={() => setView('dashboard')}
                 onEdit={() => { setEditingProject(selectedProject); setIsEditOpen(true); }}
+                onProjectClick={(p) => setSelectedProject(p)}
                 onPartialUpdate={(field, value) => handlePartialUpdate(selectedProject.code, field, value)}
                 onRegisterMember={handleRegisterMember}
               />
@@ -871,13 +889,12 @@ export default function App() {
                                     {isProjectExpanded && (
                                       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="pl-6 space-y-3">
                                         <div className="bg-slate-50/50 rounded-[2rem] p-4 border border-slate-100 shadow-inner">
-                                          <div className="hidden md:grid grid-cols-12 gap-6 px-8 py-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100/50 mb-2">
-                                            <div className="col-span-4">Item</div>
-                                            <div className="col-span-1">Equipe</div>
-                                            <div className="col-span-1">Fase</div>
+                                          <div className="hidden md:grid grid-cols-12 gap-6 px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100/50 mb-2">
+                                            <div className="col-span-5">Item</div>
+                                            <div className="col-span-1 text-center">Fase</div>
                                             <div className="col-span-2 text-center">Status</div>
-                                            <div className="col-span-1">Farol</div>
-                                            <div className="col-span-2 text-center">Início / Entrega</div>
+                                            <div className="col-span-1 text-center">Farol</div>
+                                            <div className="col-span-2 text-center">Datas</div>
                                             <div className="col-span-1 text-right">Ações</div>
                                           </div>
 
@@ -888,20 +905,16 @@ export default function App() {
                                               className="bg-white px-8 py-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-indigo-100 transition-all cursor-pointer group relative overflow-hidden mb-3 last:mb-0"
                                             >
                                               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                                                <div className="md:col-span-4 space-y-1.5">
+                                                <div className="md:col-span-5 space-y-1.5">
                                                   <h4 className="text-[14px] font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{project.item}</h4>
-                                                  <div className="flex items-center gap-2 shrink-0">
+                                                  <div className="flex items-center gap-3">
                                                     <span className="text-[10px] font-black px-2 py-0.5 bg-slate-50 text-slate-400 rounded-md border border-slate-100 uppercase tracking-wider">{project.code}</span>
+                                                    <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">{project.equipe}</span>
                                                     {project.priority && project.priority !== 'Normal' && <PriorityIcon priority={project.priority} />}
                                                   </div>
                                                 </div>
 
-                                                <div className="md:col-span-1">
-                                                  <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Equipe</p>
-                                                  <p className="text-[12px] font-semibold text-slate-500 truncate">{project.equipe}</p>
-                                                </div>
-
-                                                <div className="md:col-span-1">
+                                                <div className="md:col-span-1 text-center">
                                                   <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Fase</p>
                                                   <p className="text-[12px] font-semibold text-slate-500 truncate">{project.phase}</p>
                                                 </div>
@@ -909,30 +922,30 @@ export default function App() {
                                                   <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Status</p>
                                                   <StatusBadge status={project.status} />
                                                 </div>
-                                                <div className="md:col-span-1">
+                                                <div className="md:col-span-1 flex justify-center">
                                                   <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Farol</p>
                                                   <FarolIndicator farol={project.farol} />
                                                 </div>
 
-                                                <div className="md:col-span-2 flex items-center justify-center gap-2">
-                                                  <div className="space-y-1">
-                                                    <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase">Datas</p>
-                                                    <div className="flex items-center gap-3 text-[12px] font-bold">
-                                                      <span className="text-slate-500">{project.baseline || '---'}</span>
+                                                <div className="md:col-span-2 flex items-center justify-center">
+                                                  <div className="flex flex-col items-center">
+                                                    <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Datas</p>
+                                                    <div className="flex items-center gap-2 text-[11px] font-bold">
+                                                      <span className="text-slate-400">{project.baseline || '---'}</span>
                                                       <span className="text-slate-200">/</span>
-                                                      <span className="text-indigo-600/70">{project.deliveryDate || project.replannedDate || '---'}</span>
+                                                      <span className="text-indigo-600/60">{project.deliveryDate || project.replannedDate || '---'}</span>
                                                     </div>
                                                   </div>
                                                 </div>
 
-                                                  <div className="md:col-span-1 flex items-center justify-end gap-2 md:border-l border-slate-100 md:pl-4">
-                                                    <button onClick={(e) => { e.stopPropagation(); setEditingProject(project); setIsEditOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"><Pencil size={18} /></button>
+                                                  <div className="md:col-span-1 flex items-center justify-end gap-1">
+                                                    <button onClick={(e) => { e.stopPropagation(); setEditingProject(project); setIsEditOpen(true); }} className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"><Pencil size={16} /></button>
                                                     <button
                                                       onClick={(e) => { e.stopPropagation(); handleDeleteProject(project); }}
                                                       disabled={deletingProjectId === project.id}
-                                                      className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                                                      className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                                                     >
-                                                      {deletingProjectId === project.id ? <div className="w-4 h-4 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" /> : <Trash2 size={18} />}
+                                                      {deletingProjectId === project.id ? <div className="w-4 h-4 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" /> : <Trash2 size={16} />}
                                                     </button>
                                                   </div>
                                                 </div>
@@ -991,7 +1004,7 @@ export default function App() {
                     <FormField label="Projeto Pai">
                       <select
                         required
-                        className={inputClass}
+                        className={`${inputClass} bg-white shadow-sm border-slate-200 focus:border-indigo-500`}
                         value={newProject.name}
                         onChange={(e) => {
                           const projectName = e.target.value;
@@ -1016,7 +1029,7 @@ export default function App() {
                       <select
                         required
                         disabled={!newProject.name}
-                        className={inputClass}
+                        className={`${inputClass} bg-white shadow-sm border-slate-200 focus:border-indigo-500 disabled:bg-slate-50`}
                         value={newProject.item}
                         onChange={(e) => {
                           const itemStr = e.target.value;
@@ -1197,8 +1210,8 @@ export default function App() {
                   <div key={project.id} onClick={() => { setSelectedProject(project); setView('detalhes'); setIsListModalOpen(false); }} className="p-4 bg-slate-50 rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition-all cursor-pointer group">
                     <div className="flex justify-between items-center">
                       <div>
-                        <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{project.name}</p>
-                        <p className="text-xs text-slate-500 font-mono">{project.code}</p>
+                        <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{project.item}</p>
+                        <p className="text-xs text-slate-400 font-medium">{project.name} • {project.code}</p>
                       </div>
                     </div>
                   </div>

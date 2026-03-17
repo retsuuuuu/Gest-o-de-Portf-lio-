@@ -101,10 +101,12 @@ const TeamMemberSelector = React.memo(({ label, role, currentMember, onSelect, a
   );
 });
 
-export const ProjectDetailsView = React.memo(({ project, availableTeam, isSaving, onBack, onEdit, onPartialUpdate, onRegisterMember }: { project: Project, availableTeam: TeamData, isSaving: boolean, onBack: () => void, onEdit: () => void, onPartialUpdate: (field: string, value: string) => Promise<any>, onRegisterMember: (name: string, role: string) => void }) => {
+export const ProjectDetailsView = React.memo(({ project, allProjects = [], availableTeam, isSaving, onBack, onEdit, onProjectClick, onPartialUpdate, onRegisterMember }: { project: Project, allProjects: Project[], availableTeam: TeamData, isSaving: boolean, onBack: () => void, onEdit: () => void, onProjectClick: (p: Project) => void, onPartialUpdate: (field: string, value: string) => Promise<any>, onRegisterMember: (name: string, role: string) => void }) => {
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberRole, setNewMemberRole] = useState('UX');
+
+  const relatedItems = allProjects.filter(p => p.name === project.name && p.id !== project.id);
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,30 +171,30 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, isSaving
             </button>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-6 border-t border-slate-100 pt-8 mt-4 gap-4 md:gap-0">
-            <div className="space-y-1 md:pr-4">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Código</p>
-              <p className="text-xl font-bold text-slate-900 truncate">{project.code}</p>
+          <div className="grid grid-cols-2 md:grid-cols-6 border-t border-slate-100 pt-8 mt-4 gap-6 md:gap-0">
+            <div className="space-y-2 md:pr-4">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Código do Projeto</p>
+              <p className="text-base font-semibold text-slate-900 truncate">{project.code}</p>
             </div>
-            <div className="space-y-1 md:border-l md:border-slate-100 md:px-4">
+            <div className="space-y-2 md:border-l md:border-slate-100 md:px-6">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Equipe</p>
-              <p className="text-xl font-bold text-slate-900 truncate">{project.equipe || 'N/A'}</p>
+              <p className="text-base font-semibold text-slate-900 truncate">{project.equipe || 'N/A'}</p>
             </div>
-            <div className="space-y-1 md:border-l md:border-slate-100 md:px-4">
+            <div className="space-y-2 md:border-l md:border-slate-100 md:px-6">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Cliente</p>
-              <p className="text-xl font-bold text-slate-900 truncate" title={project.client}>{project.client || 'N/A'}</p>
+              <p className="text-base font-semibold text-slate-900 truncate" title={project.client}>{project.client || 'N/A'}</p>
             </div>
-            <div className="space-y-1 md:border-l md:border-slate-100 md:px-4">
+            <div className="space-y-2 md:border-l md:border-slate-100 md:px-6">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Data de Início</p>
-              <p className="text-xl font-bold text-slate-900 truncate">{project.baseline || '---'}</p>
+              <p className="text-base font-semibold text-slate-900 truncate">{project.baseline || '---'}</p>
             </div>
-            <div className="space-y-1 md:border-l md:border-slate-100 md:px-4">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Replan.</p>
-              <p className="text-xl font-bold text-slate-900 truncate">{project.replannedDate || '---'}</p>
+            <div className="space-y-2 md:border-l md:border-slate-100 md:px-6">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Replanejamento</p>
+              <p className="text-base font-semibold text-slate-900 truncate">{project.replannedDate || '---'}</p>
             </div>
-            <div className="space-y-1 md:border-l md:border-slate-100 md:pl-4">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Data de Entrega</p>
-              <p className="text-xl font-bold text-slate-900 truncate">{project.deliveryDate || '---'}</p>
+            <div className="space-y-2 md:border-l md:border-slate-100 md:pl-6">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Entrega Final</p>
+              <p className="text-base font-semibold text-slate-900 truncate">{project.deliveryDate || '---'}</p>
             </div>
           </div>
         </div>
@@ -258,6 +260,29 @@ export const ProjectDetailsView = React.memo(({ project, availableTeam, isSaving
         </div>
 
         <div className="space-y-8">
+          {relatedItems.length > 0 && (
+            <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-8 space-y-6">
+              <h3 className="text-base font-bold text-slate-900">Itens Atrelados</h3>
+              <div className="space-y-3">
+                {relatedItems.map(item => (
+                  <div
+                    key={item.id}
+                    onClick={() => onProjectClick(item)}
+                    className="p-4 bg-slate-50 rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition-all cursor-pointer group"
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors truncate">{item.item}</p>
+                        <p className="text-[10px] text-slate-400 font-medium uppercase tracking-tight">{item.code}</p>
+                      </div>
+                      <StatusBadge status={item.status} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-8 space-y-6">
             <div className="flex justify-between items-center">
               <h3 className="text-base font-bold text-slate-900">Equipe do Projeto</h3>
