@@ -101,12 +101,12 @@ const TeamMemberSelector = React.memo(({ label, role, currentMember, onSelect, a
   );
 });
 
-export const ProjectDetailsView = React.memo(({ project, allProjects = [], availableTeam, isSaving, onBack, onEdit, onProjectClick, onPartialUpdate, onRegisterMember }: { project: Project, allProjects: Project[], availableTeam: TeamData, isSaving: boolean, onBack: () => void, onEdit: () => void, onProjectClick: (p: Project) => void, onPartialUpdate: (field: string, value: string) => Promise<any>, onRegisterMember: (name: string, role: string) => void }) => {
+export const ProjectDetailsView = React.memo(({ project, allProjects = [], availableTeam, isSaving, onBack, onEdit, onItemClick, onPartialUpdate, onRegisterMember }: { project: Project, allProjects: Project[], availableTeam: TeamData, isSaving: boolean, onBack: () => void, onEdit: () => void, onItemClick: (p: Project) => void, onPartialUpdate: (field: string, value: string) => Promise<any>, onRegisterMember: (name: string, role: string) => void }) => {
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberRole, setNewMemberRole] = useState('UX');
 
-  const relatedItems = allProjects.filter(p => p.name === project.name && p.client === project.client);
+  const items = allProjects.filter(p => p.name === project.name && p.client === project.client);
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,6 +202,36 @@ export const ProjectDetailsView = React.memo(({ project, allProjects = [], avail
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
+          <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-8 sm:p-10 space-y-6">
+            <h3 className="text-xl font-bold text-slate-900">Itens do Projeto</h3>
+            <div className="space-y-4">
+              {items.map(item => (
+                <div
+                  key={item.id}
+                  onClick={() => onItemClick(item)}
+                  className="p-6 bg-slate-50 rounded-2xl border border-slate-100 hover:border-indigo-200 hover:bg-white transition-all cursor-pointer group"
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black px-1.5 py-0.5 bg-white text-slate-400 rounded-md border border-slate-100 uppercase tracking-wider">{item.code}</span>
+                        <h4 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{item.item}</h4>
+                      </div>
+                      <p className="text-xs text-slate-400 font-medium line-clamp-1">{item.description || "Sem descrição"}</p>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Entrega</p>
+                        <p className="text-sm font-bold text-slate-700">{item.deliveryDate || '---'}</p>
+                      </div>
+                      <StatusBadge status={item.status} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-5 sm:p-10 space-y-8">
             <div className="flex justify-between items-center">
               <h3 className="text-xl font-bold text-slate-900">Descrição do Projeto</h3>
@@ -225,74 +255,9 @@ export const ProjectDetailsView = React.memo(({ project, allProjects = [], avail
               </p>
             </div>
           </div>
-
-          <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-10 space-y-8">
-            <h3 className="text-xl font-bold text-slate-900">Destaques do Status Atual</h3>
-            <div className="space-y-6">
-              <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-indigo-100 transition-all">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl"><Save size={20} /></div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">Fase: {project.phase}</p>
-                    <p className="text-xs text-slate-500">Progresso atual no ciclo de entrega</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                   <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-indigo-600 rounded-full" style={{ width: project.status === 'Concluído' ? '100%' : '65%' }} />
-                   </div>
-                   <CheckCircle2 size={20} className={project.status === 'Concluído' ? "text-emerald-500" : "text-slate-300"} />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-indigo-100 transition-all">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-amber-50 text-amber-600 rounded-xl"><Clock size={20} /></div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">Status: {project.status}</p>
-                    <p className="text-xs text-slate-500">Status atualizado das operações diárias</p>
-                  </div>
-                </div>
-                <StatusBadge status={project.status} />
-              </div>
-            </div>
-          </div>
         </div>
 
         <div className="space-y-8">
-          {relatedItems.length > 0 && (
-            <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-8 space-y-6">
-              <h3 className="text-base font-bold text-slate-900">Itens Atrelados</h3>
-              <div className="space-y-3">
-                {relatedItems.map(item => {
-                  const isActive = item.id === project.id;
-                  return (
-                    <div
-                      key={item.id}
-                      onClick={() => !isActive && onProjectClick(item)}
-                      className={`p-4 rounded-2xl transition-all cursor-pointer group border-2 ${
-                        isActive
-                          ? 'bg-indigo-50 border-indigo-600 shadow-sm'
-                          : 'bg-slate-50 border-transparent hover:bg-indigo-50 hover:border-indigo-100'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start gap-3">
-                        <div className="min-w-0 flex-1">
-                          <p className={`text-sm font-bold transition-colors break-words ${isActive ? 'text-indigo-600' : 'text-slate-900 group-hover:text-indigo-600'}`}>
-                            {item.item}
-                          </p>
-                          <p className={`text-[10px] font-medium uppercase tracking-tight ${isActive ? 'text-indigo-400' : 'text-slate-400'}`}>
-                            {item.code}
-                          </p>
-                        </div>
-                        <StatusBadge status={item.status} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
           <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-8 space-y-6">
             <div className="flex justify-between items-center">

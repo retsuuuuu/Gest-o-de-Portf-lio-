@@ -27,6 +27,8 @@ export interface Project {
   replanning?: string;
   farol: string;
   description?: string;
+  observation?: string;
+  responsible?: string[];
   po?: string;
   ux?: string;
   qa?: string;

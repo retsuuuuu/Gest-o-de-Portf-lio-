@@ -29,6 +29,7 @@ const AnalyticsModule = lazy(() => import('./components/AnalyticsModule').then(m
 const NotificationsModal = lazy(() => import('./components/NotificationsModal').then(m => ({ default: m.NotificationsModal })));
 const SettingsModal = lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
 const ProjectDetailsView = lazy(() => import('./components/ProjectDetailsView').then(m => ({ default: m.ProjectDetailsView })));
+const ItemDetailsView = lazy(() => import('./components/ItemDetailsView').then(m => ({ default: m.ItemDetailsView })));
 
 const API_URL = "https://script.google.com/macros/s/AKfycbx1ofHix_y221y3oPdnAVstf2XLOuGaJiAeOPGKGvDh7d9M7JsPtBrXxgakTntJOYAXhg/exec";
 
@@ -287,7 +288,7 @@ export default function App() {
     return next;
   }, []);
 
-  const [view, setView] = useState<'dashboard' | 'detalhes'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'project-details' | 'item-details'>('dashboard');
   const [activeTab, setActiveTab] = useState('Visão Geral');
   const [activeSubTab, setActiveSubTab] = useState<'Ativos' | 'Backlog'>('Ativos');
   const [rawProjetos, setRawProjetos] = useState<any[]>([]);
@@ -298,6 +299,8 @@ export default function App() {
   const [farolFilter, setFarolFilter] = useState<string[]>(['Todos']);
   const [clientFilter, setClientFilter] = useState<string[]>(['Todos']);
   
+  const [selectedItem, setSelectedItem] = useState<Project | null>(null);
+
   const [projectsData, setProjectsData] = useState<Project[]>(() => {
     try {
       const saved = localStorage.getItem('tradeup_projects_cache');
@@ -382,6 +385,8 @@ export default function App() {
               deliveryDate: formatToDDMMYYYY(row['ENTREGA'] || ''),
               replannedDate: formatToDDMMYYYY(row['REPLANEJAMENTO'] || ''),
               description: row['DESCRIPTION'] || '',
+              observation: row['OBSERVATION'] || '',
+              responsible: row['RESPONSIBLE'] ? row['RESPONSIBLE'].split(',').map((s: string) => s.trim()) : [],
               po: row['PO'] || row['P.O'] || '',
               ux: row['UX'] || '',
               qa: row['QA'] || '',
@@ -433,7 +438,9 @@ export default function App() {
         "FAROL": projectToSave.farol,
         "ENTREGA": projectToSave.deliveryDate,
         "REPLANEJAMENTO": projectToSave.replannedDate,
-        "DESCRIPTION": projectToSave.description
+        "DESCRIPTION": projectToSave.description,
+        "OBSERVATION": projectToSave.observation,
+        "RESPONSIBLE": projectToSave.responsible ? projectToSave.responsible.join(', ') : ''
       }
     };
 
@@ -601,6 +608,23 @@ export default function App() {
     });
   }, []);
 
+  const projectDeliveryDates = useMemo(() => {
+    const dates: Record<string, string> = {};
+    projectsData.forEach(p => {
+      const key = `${p.client}-${p.name}`;
+      if (!dates[key]) dates[key] = p.deliveryDate || '';
+      else if (p.deliveryDate) {
+        // Simple comparison for DD/MM/YYYY
+        const [d1, m1, y1] = (dates[key] || '00/00/0000').split('/').map(Number);
+        const [d2, m2, y2] = p.deliveryDate.split('/').map(Number);
+        const date1 = new Date(y1, m1 - 1, d1);
+        const date2 = new Date(y2, m2 - 1, d2);
+        if (date2 > date1) dates[key] = p.deliveryDate;
+      }
+    });
+    return dates;
+  }, [projectsData]);
+
   const stats = useMemo(() => {
     // Excluir Backlog das estatísticas para evitar deturpação
     const activeProjects = filteredData.filter(p => (p.status || '').toLowerCase() !== 'backlog');
@@ -717,18 +741,38 @@ export default function App() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-8">
-          {view === 'detalhes' && selectedProject ? (
+          {view === 'project-details' && selectedProject ? (
             <Suspense fallback={<div className="flex-1 flex items-center justify-center min-h-[400px]"><div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>}>
               <ProjectDetailsView
-                project={selectedProject}
+                project={{...selectedProject, deliveryDate: projectDeliveryDates[`${selectedProject.client}-${selectedProject.name}`]}}
                 allProjects={projectsData}
                 availableTeam={teamData}
                 isSaving={isSaving}
                 onBack={() => setView('dashboard')}
                 onEdit={() => { setEditingProject(selectedProject); setIsEditOpen(true); }}
-                onProjectClick={(p) => setSelectedProject(p)}
+                onItemClick={(item) => { setSelectedItem(item); setView('item-details'); }}
                 onPartialUpdate={(field, value) => handlePartialUpdate(selectedProject.code, field, value)}
                 onRegisterMember={handleRegisterMember}
+              />
+            </Suspense>
+          ) : view === 'item-details' && selectedItem ? (
+            <Suspense fallback={<div className="flex-1 flex items-center justify-center min-h-[400px]"><div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>}>
+              <ItemDetailsView
+                item={selectedItem}
+                availableTeam={teamData}
+                isSaving={isSaving}
+                onBack={() => setView('project-details')}
+                onEdit={() => { setEditingProject(selectedItem); setIsEditOpen(true); }}
+                onUpdateItem={async (updates) => {
+                  const keys = Object.keys(updates);
+                  for (const key of keys) {
+                    const val = updates[key as keyof Project];
+                    const field = key === 'responsible' ? 'RESPONSIBLE' : key.toUpperCase();
+                    const valueStr = Array.isArray(val) ? val.join(', ') : String(val);
+                    await handlePartialUpdate(selectedItem.code, field, valueStr);
+                  }
+                  setSelectedItem(prev => prev ? { ...prev, ...updates } : null);
+                }}
               />
             </Suspense>
           ) : activeTab === 'Visão Geral' ? (
@@ -865,13 +909,14 @@ export default function App() {
                         {isClientExpanded && (
                           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden space-y-4 px-4">
                             {Object.entries(clientProjects).sort(([a], [b]) => a.localeCompare(b)).map(([projectName, items]) => {
-                              const projectKey = `${client}-${projectName}`;
-                              const isProjectExpanded = expandedProjects.has(projectKey);
+                              const deliveryDate = projectDeliveryDates[`${client}-${projectName}`];
+                              const isAtrasado = items.some(it => it.farol.toLowerCase().includes('atrasado'));
+
                               return (
                                 <div key={projectName} className="space-y-2">
                                   <div
-                                    onClick={() => toggleProject(projectKey)}
-                                    className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl shadow-sm cursor-pointer hover:border-indigo-200 transition-all group"
+                                    onClick={() => { setSelectedProject(items[0]); setView('project-details'); }}
+                                    className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl shadow-sm cursor-pointer hover:border-indigo-200 transition-all group relative overflow-hidden"
                                   >
                                     <div className="flex items-center gap-4">
                                       <div className="w-10 h-10 bg-slate-50 text-indigo-600 rounded-xl flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all">
@@ -879,83 +924,14 @@ export default function App() {
                                       </div>
                                       <div>
                                         <h4 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{projectName}</h4>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{items.length} Itens atrelados</p>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{items.length} Itens atrelados • Entrega Final: {deliveryDate || '---'}</p>
                                       </div>
                                     </div>
-                                    <ChevronRight className={`text-slate-300 transition-transform duration-300 ${isProjectExpanded ? 'rotate-90 text-indigo-600' : ''}`} size={20} />
-                                  </div>
-
-                                  <AnimatePresence>
-                                    {isProjectExpanded && (
-                                      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="pl-6 space-y-3">
-                                        <div className="bg-slate-50/50 rounded-[2rem] p-4 border border-slate-100 shadow-inner">
-                                          <div className="hidden md:grid grid-cols-12 gap-2 px-8 py-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100/50 mb-2">
-                                            <div className="col-span-6">Item</div>
-                                            <div className="col-span-1 text-center">Fase</div>
-                                            <div className="col-span-2 text-center">Status</div>
-                                            <div className="col-span-1 text-center">Farol</div>
-                                            <div className="col-span-2 text-center">Datas</div>
-                                          </div>
-
-                                          {items.map((project: Project) => (
-                                            <div
-                                              key={project.id}
-                                              onClick={() => { setSelectedProject(project); setView('detalhes'); }}
-                                              className="bg-white px-8 py-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-indigo-100 transition-all cursor-pointer group relative overflow-hidden mb-3 last:mb-0"
-                                            >
-                                              <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
-                                                <div className="md:col-span-6 space-y-3 min-w-0 pr-6">
-                                                  <h4 className="text-[14px] font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-snug break-words">{project.item}</h4>
-                                                  <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                      <span className="text-[9px] font-black px-1.5 py-0.5 bg-slate-50 text-slate-400 rounded-md border border-slate-100 uppercase tracking-wider">{project.code}</span>
-                                                      <span className="text-[9px] font-bold text-slate-300 uppercase tracking-wider truncate max-w-[100px]">{project.equipe}</span>
-                                                      {project.priority && project.priority !== 'Normal' && <PriorityIcon priority={project.priority} />}
-                                                    </div>
-                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                      <button onClick={(e) => { e.stopPropagation(); setEditingProject(project); setIsEditOpen(true); }} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"><Pencil size={14} /></button>
-                                                      <button
-                                                        onClick={(e) => { e.stopPropagation(); handleDeleteProject(project); }}
-                                                        disabled={deletingProjectId === project.id}
-                                                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
-                                                      >
-                                                        {deletingProjectId === project.id ? <div className="w-3 h-3 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" /> : <Trash2 size={14} />}
-                                                      </button>
-                                                    </div>
-                                                  </div>
-                                                </div>
-
-                                                <div className="md:col-span-1 text-center hidden md:flex items-center justify-center">
-                                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate">{project.phase}</p>
-                                                </div>
-                                                <div className="md:col-span-2 flex justify-center">
-                                                  <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Status</p>
-                                                  <StatusBadge status={project.status} />
-                                                </div>
-                                                <div className="md:col-span-1 flex justify-center">
-                                                  <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Farol</p>
-                                                  <FarolIndicator farol={project.farol} />
-                                                </div>
-
-                                                <div className="md:col-span-2 flex items-center justify-center">
-                                                  <div className="flex flex-col items-center">
-                                                    <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Datas</p>
-                                                    <div className="flex flex-col items-center gap-0.5 text-[10px] font-bold">
-                                                      <span className="text-slate-400">{project.baseline || '---'}</span>
-                                                      <span className="text-indigo-600/60">{project.deliveryDate || project.replannedDate || '---'}</span>
-                                                    </div>
-                                                  </div>
-                                                </div>
-                                              </div>
-                                              {project.farol.toLowerCase().includes('atrasado') && (
-                                                <div className="absolute top-0 left-0 w-1 h-full bg-rose-500" />
-                                              )}
-                                            </div>
-                                          ))}
-                                        </div>
-                                      </motion.div>
+                                    <ChevronRight className={`text-slate-300 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-indigo-600`} size={20} />
+                                    {isAtrasado && (
+                                      <div className="absolute top-0 left-0 w-1 h-full bg-rose-500" />
                                     )}
-                                  </AnimatePresence>
+                                  </div>
                                 </div>
                               );
                             })}
@@ -1113,6 +1089,9 @@ export default function App() {
                   <div className="md:col-span-2">
                     <FormField label="Relatório (Status Resumido)" id="create-project-report"><textarea id="create-project-report" rows={3} placeholder="Breve resumo do status..." value={newProject.report} onChange={(e) => setNewProject({...newProject, report: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
                   </div>
+                  <div className="md:col-span-2">
+                    <FormField label="Observação do Item" id="create-project-observation"><textarea id="create-project-observation" rows={3} placeholder="Observações..." value={newProject.observation} onChange={(e) => setNewProject({...newProject, observation: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
+                  </div>
                 </div>
                 <div className="flex justify-end gap-4 pt-4 pb-4">
                   <button type="button" onClick={() => setIsCreateOpen(false)} className="px-6 py-2.5 text-slate-600 hover:bg-slate-50 rounded-xl font-bold transition-colors">Cancelar</button>
@@ -1197,6 +1176,9 @@ export default function App() {
                   </div>
                   <div className="md:col-span-2">
                     <FormField label="Relatório (Status Resumido)" id="edit-project-report"><textarea id="edit-project-report" rows={3} value={editingProject.report} onChange={(e) => setEditingProject({...editingProject, report: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
+                  </div>
+                  <div className="md:col-span-2">
+                    <FormField label="Observação do Item" id="edit-project-observation"><textarea id="edit-project-observation" rows={3} value={editingProject.observation} onChange={(e) => setEditingProject({...editingProject, observation: e.target.value})} className={`${inputClass} resize-none`} /></FormField>
                   </div>
                 </div>
                 <div className="flex justify-end gap-4 pt-4 pb-4">
