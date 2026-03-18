@@ -889,34 +889,44 @@ export default function App() {
                                     {isProjectExpanded && (
                                       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="pl-6 space-y-3">
                                         <div className="bg-slate-50/50 rounded-[2rem] p-4 border border-slate-100 shadow-inner">
-                                          <div className="hidden md:grid grid-cols-12 gap-6 px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100/50 mb-2">
-                                            <div className="col-span-5">Item</div>
+                                          <div className="hidden md:grid grid-cols-12 gap-2 px-8 py-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100/50 mb-2">
+                                            <div className="col-span-6">Item</div>
                                             <div className="col-span-1 text-center">Fase</div>
                                             <div className="col-span-2 text-center">Status</div>
                                             <div className="col-span-1 text-center">Farol</div>
                                             <div className="col-span-2 text-center">Datas</div>
-                                            <div className="col-span-1 text-right">Ações</div>
                                           </div>
 
                                           {items.map((project: Project) => (
                                             <div
                                               key={project.id}
                                               onClick={() => { setSelectedProject(project); setView('detalhes'); }}
-                                              className="bg-white px-8 py-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-indigo-100 transition-all cursor-pointer group relative overflow-hidden mb-3 last:mb-0"
+                                              className="bg-white px-8 py-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-indigo-100 transition-all cursor-pointer group relative overflow-hidden mb-3 last:mb-0"
                                             >
-                                              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                                                <div className="md:col-span-6 space-y-1.5">
-                                                  <h4 className="text-[14px] font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight break-words">{project.item}</h4>
-                                                  <div className="flex items-center gap-3">
-                                                    <span className="text-[10px] font-black px-2 py-0.5 bg-slate-50 text-slate-400 rounded-md border border-slate-100 uppercase tracking-wider">{project.code}</span>
-                                                    <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">{project.equipe}</span>
-                                                    {project.priority && project.priority !== 'Normal' && <PriorityIcon priority={project.priority} />}
+                                              <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
+                                                <div className="md:col-span-6 space-y-3 min-w-0 pr-6">
+                                                  <h4 className="text-[14px] font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-snug break-words">{project.item}</h4>
+                                                  <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                      <span className="text-[9px] font-black px-1.5 py-0.5 bg-slate-50 text-slate-400 rounded-md border border-slate-100 uppercase tracking-wider">{project.code}</span>
+                                                      <span className="text-[9px] font-bold text-slate-300 uppercase tracking-wider truncate max-w-[100px]">{project.equipe}</span>
+                                                      {project.priority && project.priority !== 'Normal' && <PriorityIcon priority={project.priority} />}
+                                                    </div>
+                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                      <button onClick={(e) => { e.stopPropagation(); setEditingProject(project); setIsEditOpen(true); }} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"><Pencil size={14} /></button>
+                                                      <button
+                                                        onClick={(e) => { e.stopPropagation(); handleDeleteProject(project); }}
+                                                        disabled={deletingProjectId === project.id}
+                                                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                                                      >
+                                                        {deletingProjectId === project.id ? <div className="w-3 h-3 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" /> : <Trash2 size={14} />}
+                                                      </button>
+                                                    </div>
                                                   </div>
                                                 </div>
 
-                                                <div className="md:col-span-1 text-center hidden md:block">
-                                                  <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Fase</p>
-                                                  <p className="text-[12px] font-semibold text-slate-500 truncate">{project.phase}</p>
+                                                <div className="md:col-span-1 text-center hidden md:flex items-center justify-center">
+                                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate">{project.phase}</p>
                                                 </div>
                                                 <div className="md:col-span-2 flex justify-center">
                                                   <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Status</p>
@@ -930,25 +940,13 @@ export default function App() {
                                                 <div className="md:col-span-2 flex items-center justify-center">
                                                   <div className="flex flex-col items-center">
                                                     <p className="md:hidden text-[9px] font-bold text-slate-400 uppercase mb-1">Datas</p>
-                                                    <div className="flex items-center gap-2 text-[11px] font-bold">
+                                                    <div className="flex flex-col items-center gap-0.5 text-[10px] font-bold">
                                                       <span className="text-slate-400">{project.baseline || '---'}</span>
-                                                      <span className="text-slate-200">/</span>
                                                       <span className="text-indigo-600/60">{project.deliveryDate || project.replannedDate || '---'}</span>
                                                     </div>
                                                   </div>
                                                 </div>
-
-                                                  <div className="md:col-span-1 flex items-center justify-end gap-1">
-                                                    <button onClick={(e) => { e.stopPropagation(); setEditingProject(project); setIsEditOpen(true); }} className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"><Pencil size={16} /></button>
-                                                    <button
-                                                      onClick={(e) => { e.stopPropagation(); handleDeleteProject(project); }}
-                                                      disabled={deletingProjectId === project.id}
-                                                      className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                                                    >
-                                                      {deletingProjectId === project.id ? <div className="w-4 h-4 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" /> : <Trash2 size={16} />}
-                                                    </button>
-                                                  </div>
-                                                </div>
+                                              </div>
                                               {project.farol.toLowerCase().includes('atrasado') && (
                                                 <div className="absolute top-0 left-0 w-1 h-full bg-rose-500" />
                                               )}
